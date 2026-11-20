@@ -1,0 +1,6 @@
+{
+  "name": "Crystal Koi — Supply Side Studio",
+  "description": "Програматик нийлүүлэлтийг өөрөө сонгон бүрдүүлэх бие даасан студи.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

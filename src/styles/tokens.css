@@ -1,0 +1,111 @@
+:root {
+  --u: calc(100vw / 1440);
+
+  --ink: #f4f2ff;
+  --ink-2: rgba(236, 232, 255, 0.72);
+  --ink-3: rgba(220, 214, 255, 0.62);
+  --peri: #6f78ff;
+  --peri-2: #8d94ff;
+  --navy: #0d0830;
+  --line: rgba(196, 178, 255, 0.15);
+  --glass-hi: linear-gradient(160deg, rgba(120, 100, 255, 0.2), rgba(70, 50, 170, 0.14));
+
+  --font-sans: "Inter Tight", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+
+  --fs-hero: calc(74 * var(--u));
+  --lh-hero: calc(68 * var(--u));
+  --ls-hero: -0.025em;
+
+  --fs-h2: calc(52 * var(--u));
+  --lh-h2: 1.1;
+  --ls-h2: -0.028em;
+
+  --fs-cta: calc(72 * var(--u));
+  --lh-cta: 1.02;
+  --ls-cta: -0.032em;
+
+  --fs-card-title: calc(32 * var(--u));
+  --lh-card-title: 1.12;
+  --ls-card-title: -0.022em;
+
+  --fs-role-title: calc(29 * var(--u));
+  --ls-role-title: -0.02em;
+
+  --fs-stat: calc(40 * var(--u));
+  --ls-stat: -0.03em;
+
+  --fs-scroll-card: calc(27 * var(--u));
+  --lh-scroll-card: 1.18;
+  --ls-scroll-card: -0.01em;
+
+  --fs-wordmark: calc(236 * var(--u));
+  --lh-wordmark: 0.8;
+  --ls-wordmark: -0.05em;
+
+  --z-scene: 0;
+  --z-main: 1;
+  --z-nav: 20;
+  --z-popover: 30;
+
+  --background: 247 71% 11%;
+  --foreground: 251 100% 97%;
+  --card: 251 64% 17%;
+  --card-foreground: 251 100% 97%;
+  --popover: 251 64% 17%;
+  --popover-foreground: 251 100% 97%;
+  --primary: 236 100% 72%;
+  --primary-foreground: 251 100% 97%;
+  --secondary: 248 56% 28%;
+  --secondary-foreground: 251 100% 97%;
+  --muted: 247 64% 18%;
+  --muted-foreground: 246 37% 74%;
+  --accent: 248 57% 30%;
+  --accent-foreground: 251 100% 97%;
+  --destructive: 351 100% 78%;
+  --destructive-foreground: 247 71% 11%;
+  --border: 248 46% 27%;
+  --input: 248 46% 27%;
+  --ring: 236 100% 78%;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: 247 71% 11%;
+  --foreground: 251 100% 97%;
+  --card: 251 64% 17%;
+  --card-foreground: 251 100% 97%;
+  --popover: 251 64% 17%;
+  --popover-foreground: 251 100% 97%;
+  --primary: 236 100% 72%;
+  --primary-foreground: 251 100% 97%;
+  --secondary: 248 56% 28%;
+  --secondary-foreground: 251 100% 97%;
+  --muted: 247 64% 18%;
+  --muted-foreground: 246 37% 74%;
+  --accent: 248 57% 30%;
+  --accent-foreground: 251 100% 97%;
+  --destructive: 351 100% 78%;
+  --destructive-foreground: 247 71% 11%;
+  --border: 248 46% 27%;
+  --input: 248 46% 27%;
+  --ring: 236 100% 78%;
+}
+
+@media (max-width: 820px) {
+  :root {
+    --u: calc(100vw / 390);
+
+    --fs-hero: 46px;
+    --lh-hero: 44px;
+
+    --fs-h2: 32px;
+    --fs-cta: 42px;
+    --fs-card-title: 28px;
+    --fs-role-title: 27px;
+    --fs-stat: 30px;
+    --fs-scroll-card: 18px;
+    --fs-wordmark: 76px;
+  }
+}

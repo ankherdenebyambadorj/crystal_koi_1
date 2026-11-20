@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="ck-fav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e2d6ff" />
+      <stop offset="100%" stop-color="#6f78ff" />
+    </linearGradient>
+  </defs>
+  <path d="M20 3 L35 20 L20 37 L5 20 Z" fill="none" stroke="url(#ck-fav)" stroke-width="2" stroke-linejoin="round" />
+  <path d="M13 27 C13 19 19 13 28 12 C27 21 21 27 13 27 Z" fill="url(#ck-fav)" />
+</svg>

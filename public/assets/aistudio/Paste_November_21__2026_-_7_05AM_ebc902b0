@@ -1,0 +1,1622 @@
+<!--
+BEFORE USING (delete this block):
+1. Everything is inside this one file; nothing has to be pasted. The original design spec extracts are already placed in Parts 1 and 2.
+2. In Part 1, section 10, `social.facebook` and `social.instagram` are empty. Fill them with the full https:// page URLs, or leave them empty and fill them later.
+3. If your AI tool takes one long file or message (Claude Code, Cursor, Codex and similar agents), give it the whole file.
+   If it is a chat builder with a message limit (Lovable, Bolt, v0 and similar), send Part 0 together with Part 1 first; when the checks pass, send Part 0 again with the next part, and so on, in order.
+4. After each part, open the site and look at it before sending the next one.
+-->
+
+# CRYSTAL KOI — FULL BUILD PROMPT
+
+You are building the complete website of **Crystal Koi** ("Supply Side Studio"), a Mongolian-language product site for a self-serve programmatic-media curation studio. The look, the 3D koi, the pond video and all animation come from a reference design (a spec written for another brand called "Nectarline"). The reference spec is included inside Parts 1 and 2 as verbatim extracts. This file is the whole job, divided into numbered parts. Build the parts in order.
+
+## PART 0 — MASTER BRIEF (read first, applies to every part)
+
+### 0.1 Rules, in priority order
+
+1. **The reference design never changes.** Fonts, the pond video, the pictures, every animation, every size, every position, the scaling system (`u`) and the 820px breakpoint stay exactly as the spec says. Only the brand name, the logo and the text change.
+2. **Text is fitted to the design, never the design to the text.** Mongolian runs longer than English. All Mongolian strings in this file were measured to take no more lines than the English original. Never shrink a font, change letter-spacing, add a breakpoint, add minimum text sizes or fix heights to make text fit; shorten the text instead.
+3. **What the reference design lacks is added in the same theme.** Missing pages, the backend, forms, and a few interface parts are built with the same glass, violet and Fira Code language. Nothing that already matches the spec is replaced.
+4. **Anything broken gets fixed**, without changing the design.
+5. **The five media files already exist.** The pond video (mp4), the day picture, the night picture and the 3D koi model (GLB) are finished files hosted online; their URLs are in the spec's section 1. Never generate, draw, redraw or replace them ("Kling 3.0" and "Tripo H3.1" in the spec only name the tools once used to make them). Do not draw the pond with code, and never put an image or any shape where the 3D koi belongs. If your environment cannot open a URL, still write it into the code exactly as given; the visitor's browser loads it. If a file fails in the browser: video fails → the day picture stays visible; the GLB fails → no koi, nothing in its place.
+6. **The code must read as if a careful senior engineer wrote it**: common patterns, clear names, no generated-by notes, no leftovers, secure by default. `docs/ENGINEERING.md` (created in Part 1) defines the standard; every later part follows it.
+
+### 0.2 Stack and allowed packages
+
+Frontend: React 18, Vite, JavaScript/JSX (no TypeScript), Tailwind CSS, shadcn/ui (the **Radix** flavour), React Router. Allowed packages, and only these: `react`, `react-dom`, `react-router-dom`, `tailwindcss` with its Vite/PostCSS plugin, `class-variance-authority`, `clsx`, `tailwind-merge`, `@radix-ui/*` (only the ones a shadcn component needs), `@tanstack/react-query`, `react-hook-form`, `zod`, `@hookform/resolvers`, `three` (exactly 0.170.0, the version the spec uses), and the platform's own client SDK if the platform has one. Install any of them that are missing, at an exact version. Do not add react-three-fiber, drei, an animation library, a second UI kit, a state library, a CSS-in-JS library, or any other package; if nothing allowed can do a job, write the small piece of code yourself.
+
+shadcn/ui: the website `ui.shadcn.com` now shows a Base UI flavour by default; use the **Radix** flavour only (its Radix tab). If the project has no `src/components/ui`, create the component files by hand in the standard shadcn Radix pattern (or with the CLI only if you can select the Radix version). Never install `@base-ui/*` or `@base-ui-components/*`.
+
+All icons, charts, badges, the logo and every decoration are inline SVG or CSS, as in the spec.
+
+### 0.3 Platform mapping (Part 4)
+
+Part 4 is written for a builder with a managed backend (entities, serverless functions, a client SDK). If your platform differs, keep every behaviour, limit, field name and access rule exactly, and map the words: **entity** = database table or collection; **function** in `functions/` = serverless or edge function; **admin-only access** = deny by default for anonymous and signed-in users (for SQL: row-level security with no public policy; only the server role reads and writes); **SDK call** = the platform's client method. Secrets stay on the server and never reach the client bundle. If the platform cannot do something Part 4 requires, say so in `docs/verification-4.md` and never weaken a security rule to make it work.
+
+### 0.4 Language
+
+Every visible string is Mongolian (Cyrillic) and lives in `src/content/`. Code identifiers, comments (rare), file names and `docs/` are English. The brand name in Latin letters is "Crystal Koi". Fonts that contain Ө ө Ү ү are specified in Part 1; do not change them.
+
+### 0.5 The parts
+
+| Part | What it builds | Needs |
+|---|---|---|
+| 1 | Scene (pond video lens, 3D koi, crossfade), navigation, hero, router, content files, tokens, `ENGINEERING.md`, logo | the spec extracts in Part 1 |
+| 2 | Home sections (studio with dashboard, packages, use-case staircase, CTA) and the footer | Part 1 |
+| 3 | Dropdown menus, mobile drawer, 11 content pages, docs, privacy, terms | Parts 1–2 |
+| 4 | Database, serverless functions, 4 forms, sign-in, 8 data pages | Part 3 |
+| 5 | Review and hardening (no new features) | Parts 1–4 |
+| 6 | Missing interface parts built from shadcn components, restyled | Parts 1–5 |
+| 7 | Scene verification and final acceptance | Parts 1–6 |
+
+### 0.6 How to work
+
+For every part: (a) write a short plan to `docs/plan-N.md`; (b) implement; (c) check the part's acceptance list and record pass or fail in `docs/verification-N.md`; (d) fix failures before starting the next part. Parts 1–4 each state their own scope; do not build ahead. Earlier acceptance lists must still pass after every later part. If a part tells you to leave something as a stub, leave it.
+
+When a part says "section N", it means the numbered sections of that part. The spec extracts use the spec's own numbering (1–14); where that is ambiguous the text says "the spec's section N".
+
+### 0.7 Things the owner does later (do not invent these)
+
+Fill the Facebook and Instagram URLs in `src/content/brand.js` (empty strings are fine: the icons only render for non-empty values); add real status rows, partners and customer stories in the database; replace the sample statistics on the home page with real figures; have the privacy and terms text reviewed by a lawyer.
+
+---
+
+# PART 1 — FOUNDATION (scene, navigation, hero)
+
+## 0. How to read this part
+
+You are building a production website for the brand **Crystal Koi** with the stack from Part 0 (React 18, Vite, Tailwind, shadcn/ui, React Router, JavaScript/JSX). The prompt has three layers. When they disagree, the higher layer wins:
+
+1. **OVERRIDES** (sections 1–9): rules for this project. They beat everything else.
+2. **CONTENT** (section 10): every visible string, in Mongolian, and the brand and contact data.
+3. **DESIGN SPEC** (section 12): a detailed spec written for another brand and for a single HTML file. Use it as the source of truth for layout, measurements, colours, motion, the lens shader and the 3D fish. Wherever it quotes text, a brand name or a file format, take the layout and timing from it but the text from section 10.
+
+Work in this order: (a) write a short plan to `docs/plan-1.md` (files to create, in order); (b) implement; (c) check every item of section 11 and record pass/fail in `docs/verification-1.md`. Do not build anything outside the scope of section 1.
+
+## 1. Scope of this part
+
+Build: app shell, the fixed scene (pond video through the WebGL ripple lens, violet layer, night layer, crystal koi), navigation, hero, shared UI primitives, the routing skeleton, content and brand config, and the engineering docs.
+
+Do not build: the other home sections (Part 2), inner pages, dropdown menu and mobile drawer (Part 3), backend, forms and auth (Part 4).
+
+Home route `/` renders the hero followed by four empty anchor sections with ids `studio`, `packs`, `uses` and `end` (Part 2 fills them; the dashboard panel inside `studio` gets the id `dash`, which the koi poses use). Every route in section 6 must exist now as a `PageStub`, so every link resolves. All scroll and pose code must tolerate a missing anchor (skip that calculation, never throw).
+
+## 2. Overrides to the design spec
+
+- **Stack.** Ignore "single HTML file", "inline CSS", "inline scripts", "import map", "CDN", "no framework" and "base64 fonts". Build React components and hooks.
+- **Three.js.** Import from the `three` package (exactly 0.170.0) (`three/examples/jsm/loaders/GLTFLoader.js`, `three/examples/jsm/environments/RoomEnvironment.js`) through a dynamic `import()` so the page text never waits for 3D code. Do not add react-three-fiber or any other 3D package.
+- **Brand.** Replace every "Nectarline" with `brand.name` ("Crystal Koi"), the deal prefix `nl.` with `ck.`, and drop the ® sign everywhere.
+- **URLs.** Copy the five media URLs from the spec's section 1 verbatim into `src/content/assets.js` as named constants. No other file may contain a URL. The five files (pond mp4, day plate, night plate, koi GLB, Three.js) are finished, hosted files: never generate, draw or replace any of them ("Kling 3.0" and "Tripo H3.1" in the spec are only credits). If your build environment cannot open a URL, write it into the code anyway; the visitor's browser loads it. The site must keep working if any of them fails (section 7): video fails, the day plate stays; GLB fails, no koi, never an image or code-drawn stand-in.
+- **Fonts.** Remove the base64 latin font files. Load, in `index.html`, with `preconnect` and `display=swap`: Inter Tight (300, 400, 500, 600), Instrument Serif (italic), Fira Code (400), Cormorant Garamond (italic 500, the Cyrillic fallback for the serif accent words) from the Google Fonts CSS API. The CSS API serves the `cyrillic` and `cyrillic-ext` subsets automatically; they are required, because Mongolian letters Ө ө Ү ү live in `cyrillic-ext`.
+- **Document.** `<html lang="mn">`, a `usePageMeta({ title, description })` hook that sets `document.title` and the meta description on every route, and a visible skip link "Үндсэн агуулга руу шилжих".
+- **Navigation links are real links.** Everything that goes to another page is a React Router `<Link>` styled as the spec's button or pill, never a `<button onClick={navigate}>`.
+- **Touch devices.** The hover lens and pointer tilt run only when `(hover: hover) and (pointer: fine)` matches; otherwise presence stays 0 and tilt stays 0.
+
+## 3. Technology map (which tech where, and how they connect)
+
+| Part | Implementation | File |
+|---|---|---|
+| Unit system `--u` | hook `useViewportUnit` writes `--u` on `<html>` from `documentElement.clientWidth`, on load, resize and `document.fonts.ready` | `src/hooks/useViewportUnit.js` |
+| Scene stack | one `SceneLayout` mounted once above the router, so route changes never reload video or GLB | `src/components/scene/SceneLayout.jsx` |
+| Pond lens | raw WebGL1 in `PondCanvas`, render loop in `useAnimationFrame` | `src/components/scene/PondCanvas.jsx` |
+| Koi | Three.js in `KoiScene`, poses in `koiPoses.js`, interpolation in `poseMath.js` (pure functions) | `src/components/scene/` |
+| Scroll crossfade and koi progress | one shared store `scrollStore` fed by one passive scroll listener batched with `requestAnimationFrame`; consumers subscribe | `src/lib/scrollStore.js` |
+| Pointer state | one shared `pointerStore` (u, v, tilt, inside) fed by one passive `pointermove` listener | `src/lib/pointerStore.js` |
+| Anchor positions | `measureAnchors()` reads section tops once on load, resize, `document.fonts.ready`, route change and via a `ResizeObserver` on `<main>` | `src/lib/measureAnchors.js` |
+| Entrance animation | Web Animations API in `useHeroEntrance` | `src/hooks/useHeroEntrance.js` |
+| Reveal on scroll | `useReveal` (IntersectionObserver, observes once) | `src/hooks/useReveal.js` |
+| Routing | existing router; explicit `<Route>` entries for nested paths; paths live only in `src/content/routes.js` | `src/App.jsx` |
+| Copy | plain JS modules, components only render | `src/content/` |
+
+## 4. Typography and copy fit (the design does not change)
+
+The owner's rule: the reference design is never changed. Only the brand, the logo, the text and what the reference lacks change.
+
+- **Font stacks exactly as the spec**: sans `"Inter Tight", system-ui, sans-serif`; serif accent `"Instrument Serif", "Cormorant Garamond", Georgia, serif`, italic, weight 500, letter-spacing 0 (Instrument Serif has no Cyrillic, so Mongolian accent words fall through to Cormorant Garamond italic, which contains Ө ө Ү ү); mono `"Fira Code", ui-monospace, monospace`. Inter Tight and Fira Code both contain Ө ө Ү ү (checked in the font files), so every eyebrow, tag, chip, table heading, column heading and the typed bid request stays in Fira Code, as in the spec.
+- **The text is fitted to the design, never the design to the text.** Mongolian runs longer than English. Every Mongolian string in section 10 and in later prompts was measured with the real font files at the spec's sizes and takes no more lines than the English original of its slot. Never shrink a font, change letter-spacing or line-height, add a breakpoint, or add minimum text sizes to make text fit. A string added later that needs more lines than the English original must be shortened.
+- Do not use fixed heights, `white-space: nowrap` (only nav items, buttons and the footer wordmark may), or `text-overflow` on text containers. Use `min-height` where the spec has `min-height`, and `overflow-wrap: break-word` as a safety net. These do not change the look when the text fits.
+- **Type tokens.** Create `src/styles/tokens.css` with the spec's own values and use them everywhere (later prompts read them). Headlines are weight 300, card and role titles 400, no uppercase, no `text-wrap: balance`.
+
+| Token | Desktop (above 820px) | Phone (820px and below) |
+|---|---|---|
+| `--fs-hero` | 74u, line-height 68u, letter-spacing −0.025em | 46px, line-height 44px |
+| `--fs-h2` (Studio, Packages, Use-cases headlines) | 52u, line-height 1.1, letter-spacing −0.028em | 32px |
+| `--fs-cta` | 72u, line-height 1.02, letter-spacing −0.032em | 42px |
+| `--fs-card-title` (package cards) | 32u, line-height 1.12, letter-spacing −0.022em | 28px |
+| `--fs-role-title` (use-case cards) | 29u, letter-spacing −0.02em | 27px |
+| `--fs-stat` | 40u, letter-spacing −0.03em | 30px |
+| `--fs-scroll-card` | 27u, line-height 1.18, letter-spacing −0.01em | 18px |
+| `--fs-wordmark` | 236u, line-height .8, letter-spacing −0.05em | 76px |
+
+- `RichText` (`src/components/ui/RichText.jsx`) renders an array of strings and these objects: `{ accent }` (colour `#8d94ff`), `{ serif }` (serif accent stack) and `{ br: true }` (a forced line break `<br />`; the spec's headlines have them).
+
+## 5. Responsive system (exactly the spec's)
+
+- **Two layouts, as spec sections 4 and 12 say.** Above 820px: the desktop layout, scaled with `u = clientWidth / 1440`. At 820px and below: the phone layout with `u = clientWidth / 390` and the spec's phone rules in px. One constant `STACKED_MAX = 820` in JS and `@media (max-width: 820px)` in CSS. Widths from 821px to 1100px therefore get the scaled desktop design, as in the reference. No other breakpoints, no minimum text sizes, no maximum width on the phone container (the spec's own paddings apply).
+- Use `svh`/`dvh` for full-height areas and `env(safe-area-inset-*)` on fixed elements.
+- No horizontal scroll at any width: `document.documentElement.scrollWidth <= window.innerWidth` must hold at 360, 390, 600, 768, 820, 821, 1024, 1100, 1280, 1440 and 1920 px.
+- The navigation keeps the spec's geometry at every width above 820px. Nothing in it overlaps at any of those widths.
+- In development only (`import.meta.env.DEV`), add `useOverflowWatch`, which on load and resize logs the CSS path of any element whose right edge passes the viewport. It must be tree-shaken from production builds.
+
+## 6. Routes
+
+Define in `src/content/routes.js` as the single source of truth (`ROUTES.productCuration = '/product/curation'` and so on) and register all of them now, each rendering `PageStub` (title from content, one line "Энэ хуудас дараагийн шатанд бэлэн болно.", a link "Нүүр хуудас руу буцах"):
+
+`/`, `/product/curation`, `/product/monetization`, `/product/forecasts`, `/use-cases/media-agency`, `/use-cases/direct-advertiser`, `/use-cases/publisher`, `/use-cases/ad-tech`, `/channels/ctv`, `/channels/display-native`, `/channels/dooh`, `/channels/video-audio`, `/resources/partners`, `/resources/docs`, `/resources/status`, `/contact`, `/stories`, `/book-a-call`, `/get-started`, `/login`, `/privacy`, `/terms`, `/opt-out`, plus a `NotFound` for everything else (heading "404", text "Хуудас олдсонгүй.", link "Нүүр хуудас руу буцах").
+
+If the platform generates routes from files (for example in `src/pages`), keep its mechanism for top-level pages and add explicit `<Route>` entries for nested paths; otherwise declare every route explicitly. Do not replace the router provider. On every route change: scroll to top (unless there is a `#hash`), re-run `measureAnchors()`, and update the page meta. The active nav link gets `aria-current="page"`.
+
+## 7. Reliability: what must not break
+
+The scene is decoration. Any failure in it must leave a working, readable site and no uncaught exception.
+
+- **Pond canvas.** Create the WebGL context in try/catch; on failure, or if the shader does not compile or link, show the plain video (spec's fallback). Handle `webglcontextlost` (call `preventDefault`, stop the loop) and `webglcontextrestored` (rebuild program, buffers, texture). Set `crossOrigin = 'anonymous'` before assigning `src`. Catch the `play()` promise rejection. If the video errors or stalls, leave the still day plate visible. Pause the video and the loop when `document.hidden` or when the day plate is fully faded (spec).
+- **Koi.** If the dynamic import, the GLB download or the parse fails, render nothing and keep the page working. Handle `webglcontextlost`. Pause rendering when the tab is hidden. Put `data-koi-state="loading"` on the koi canvas, then `"ready"` or `"failed"`, so the state is visible in the browser inspector. Pixel ratio: `min(devicePixelRatio, 2)` on desktop, `min(devicePixelRatio, 1.5)` when stacked. Adaptive quality: if the average frame time over 90 frames exceeds 28ms, lower the pixel ratio by 0.25 (not below 1) and never raise it again in that session.
+- **Cleanup.** Every listener, observer, timer and animation frame is removed on unmount; geometries, materials, textures and the renderer are disposed (`renderer.dispose()` and `forceContextLoss()`); the video's `src` is removed. Effects must be safe under React StrictMode's double invocation: after mounting, exactly two `<canvas>` elements exist (pond and koi), even after 10 route changes.
+- **Reduced motion.** Read `prefers-reduced-motion` through `matchMedia` and react to its `change` event live.
+- **Listeners** for scroll, resize and pointer are `{ passive: true }`. No layout reads inside the animation loop except cached values.
+- **No console errors or warnings** in normal use, in development and production.
+
+## 8. Engineering standards
+
+Create `docs/ENGINEERING.md` with exactly this content, and follow it in every file of this and every later prompt:
+
+```
+# Engineering standards
+
+## Code style
+- JavaScript (JSX) with the project's existing lint configuration. No TypeScript migration.
+- Naming: camelCase for variables and functions, PascalCase for components, UPPER_SNAKE_CASE for constants, kebab-case for CSS classes and non-component file names (components: Name.jsx, hooks: useName.js).
+- Entity names are PascalCase singular; entity fields are snake_case, matching the platform's own fields.
+- One component per file. A file over about 200 lines is split. Logic that is not rendering lives in hooks or lib files.
+- Use the most common pattern for each job: React function components and hooks, TanStack Query for server state, react-hook-form with zod for forms, React Router for navigation.
+- Comments only explain why. No comments that restate the code, no commented-out code, no TODO, no emoji, no placeholder text, no console.log.
+
+## Failure handling
+- Every network call has a timeout, one retry for safe reads, a loading state, an error state and an empty state.
+- Forms are idempotent: a client-generated request id prevents duplicate records on double submit.
+- User-facing errors are short Mongolian messages. Technical details go to server logs only, never to the browser, and never contain personal data.
+- On any doubt, deny: if an access check cannot complete, the request fails closed.
+
+## Security
+- Never trust the client. Validate every input again on the server.
+- Authorization is checked on the server for every read and write. Public visitors can only create form submissions; they can never read them.
+- No secret, service key or token in client code or in git.
+- Render user or database text as plain text only. Never use dangerouslySetInnerHTML. Links from data must be https and carry rel="noopener noreferrer".
+
+## Dependencies
+- Use only the packages allowed in Part 0 (section 0.2). Install any that are missing at an exact version and list them in docs/DEPENDENCIES.md with a reason. Add any other package only when nothing allowed can do the job, check that the exact name exists and is established, pin the exact version, and record the reason in docs/DEPENDENCIES.md.
+- Never invent a package name.
+
+## Verification
+- Each part's acceptance list is checked and recorded in docs/verification-N.md.
+- Pure logic (validation schemas, seeded series generator, pose interpolation) gets unit tests when the project allows adding a test runner. If it does not, skip tests silently and do not add errors.
+```
+
+Also create `README.md` (what the site is, how to run it, folder map, where content lives) and `docs/DEPENDENCIES.md` (empty table of additions).
+
+## 9. Brand, logo, favicon
+
+- Name: `brand.name` = "Crystal Koi". Wordmark: Inter Tight, weight 600, 23u, letter-spacing −0.01em (spec's nav logo text).
+- **Logo mark** (simple, a crystal holding a koi-shaped leaf). Component `Logo` draws it as inline SVG, `viewBox="0 0 40 40"`, a linear gradient from `#e2d6ff` (top-left) to `#6f78ff` (bottom-right) with an id made by `useId()` so two logos on a page never clash:
+  - outline: `<path d="M20 3 L35 20 L20 37 L5 20 Z" fill="none" stroke="url(#id)" stroke-width="2" stroke-linejoin="round"/>`
+  - leaf: `<path d="M13 27 C13 19 19 13 28 12 C27 21 21 27 13 27 Z" fill="url(#id)"/>`
+  - Size 34u in the navigation and 28u in the footer, 14u gap before the wordmark. This replaces the spec's glowing orb. Put the same SVG in `public/favicon.svg`.
+- A prop `showWordmark` (default true) lets the mark stand alone. If the owner later uploads `src/assets/logo.svg`, `Logo` uses it instead; build that switch in one place only.
+- **Social icons** (`FacebookIcon`, `InstagramIcon` in `src/components/icons/`, inline SVG, 22u box, stroke currentColor, stroke-width 1.4, no fill): Facebook path `M14 3h-2a4 4 0 0 0-4 4v3H6v3h2v8h3v-8h2.5l.5-3H11V7.5c0-.3.2-.5.5-.5H14z`; Instagram = rounded square `x=3 y=3 width=18 height=18 rx=5`, circle `r=4` at the centre, and a dot `r=0.9` at (17.2, 6.8). They are used in Part 2's footer; create the components now.
+
+## 10. Content (Mongolian). Create these files exactly; do not reword
+
+`src/content/brand.js`
+```js
+export const brand = {
+  name: 'Crystal Koi',
+  descriptor: 'Supply Side Studio',
+  dealPrefix: 'ck',
+};
+
+export const contact = {
+  address: 'Улаанбаатар хот, Хан-Уул дүүрэг',
+  phoneDisplay: '9007 0740',
+  phoneHref: 'tel:+97690070740',
+  mapHref: 'https://www.google.com/maps/search/?api=1&query=Khan-Uul+District+Ulaanbaatar',
+};
+
+export const social = {
+  facebook: '',
+  instagram: '',
+};
+```
+Social icons render only for non-empty values and open in a new tab with `rel="noopener noreferrer"`.
+
+`src/content/siteContent.js`
+```js
+export const meta = {
+  siteTitle: 'Crystal Koi — Supply Side Studio',
+  description: 'Програматик нийлүүлэлтийг өөрөө сонгон бүрдүүлэх бие даасан студи.',
+};
+
+export const common = {
+  skipLink: 'Үндсэн агуулга руу шилжих',
+  backHome: 'Нүүр хуудас руу буцах',
+  stubNote: 'Энэ хуудас дараагийн шатанд бэлэн болно.',
+  notFoundTitle: '404',
+  notFoundText: 'Хуудас олдсонгүй.',
+};
+
+export const nav = {
+  label: 'Үндсэн цэс',
+  product: 'Бүтээгдэхүүн',
+  channels: 'Сувгууд',
+  resources: 'Нөөц',
+  stories: 'Амжилтын түүх',
+  login: 'Нэвтрэх',
+  bookCall: 'Уулзалт товлох',
+  getStarted: 'Үнэгүй эхлэх',
+  openMenu: 'Цэс нээх',
+  closeMenu: 'Цэс хаах',
+  logout: 'Гарах',
+};
+
+export const hero = {
+  headline: ['Танилцуулъя', 'Crystal Koi'],
+  subline: 'Supply Side Studio',
+  primaryCta: 'Үнэгүй эхлэх',
+  secondaryCta: 'Уулзалт товлох',
+  scrollCard: ['Гүйлгэ', '& нээж үз'],
+  scrollLabel: 'Доош гүйлгэж нээж үзэх',
+};
+
+export const footer = {
+  about: 'Програматик нийлүүлэлтийг анхны брифээс идэвхтэй deal хүртэл сонгон бүрдүүлдэг бие даасан студи.',
+  systemStatus: 'Бүх систем хэвийн',
+  contactHeading: 'ХОЛБОО БАРИХ',
+  facebookLabel: 'Facebook хуудас',
+  instagramLabel: 'Instagram хуудас',
+  columns: [
+    { heading: 'БҮТЭЭГДЭХҮҮН', links: [
+      { label: 'Сонгон бүрдүүлэлт', to: '/product/curation' },
+      { label: 'Мөнгөжүүлэлт', to: '/product/monetization' },
+      { label: 'Таамаглал', to: '/product/forecasts' },
+    ] },
+    { heading: 'ХЭРЭГЛЭЭ', links: [
+      { label: 'Медиа агентлаг', to: '/use-cases/media-agency' },
+      { label: 'Шууд сурталчлагч', to: '/use-cases/direct-advertiser' },
+      { label: 'Нийтлэгч', to: '/use-cases/publisher' },
+      { label: 'Ad Tech', to: '/use-cases/ad-tech' },
+    ] },
+    { heading: 'СУВГУУД', links: [
+      { label: 'CTV', to: '/channels/ctv' },
+      { label: 'Display / Native', to: '/channels/display-native' },
+      { label: 'DOOH', to: '/channels/dooh' },
+      { label: 'Бичлэг / Аудио', to: '/channels/video-audio' },
+    ] },
+    { heading: 'НӨӨЦ', links: [
+      { label: 'Түншүүдийн жагсаалт', to: '/resources/partners' },
+      { label: 'Баримт бичиг', to: '/resources/docs' },
+      { label: 'Системийн төлөв', to: '/resources/status' },
+      { label: 'Холбоо барих', to: '/contact' },
+    ] },
+  ],
+  legalLinks: [
+    { label: 'Нууцлал', to: '/privacy' },
+    { label: 'Нөхцөл', to: '/terms' },
+    { label: 'Татгалзах', to: '/opt-out' },
+  ],
+};
+```
+The copyright line is built in code: `©{new Date().getFullYear()} {brand.name}: {brand.descriptor}`.
+
+Page titles for stubs and meta (create `pageTitles` in the same file, key = route path): `/product/curation` "Сонгон бүрдүүлэлт", `/product/monetization` "Мөнгөжүүлэлт", `/product/forecasts` "Таамаглал", `/use-cases/media-agency` "Медиа агентлаг", `/use-cases/direct-advertiser` "Шууд сурталчлагч", `/use-cases/publisher` "Нийтлэгч", `/use-cases/ad-tech` "Ad Tech", `/channels/ctv` "CTV", `/channels/display-native` "Display / Native", `/channels/dooh` "DOOH", `/channels/video-audio` "Бичлэг / Аудио", `/resources/partners` "Түншүүдийн жагсаалт", `/resources/docs` "Баримт бичиг", `/resources/status` "Системийн төлөв", `/contact` "Холбоо барих", `/stories` "Амжилтын түүх", `/book-a-call` "Уулзалт товлох", `/get-started` "Үнэгүй эхлэх", `/login` "Нэвтрэх", `/privacy` "Нууцлал", `/terms` "Үйлчилгээний нөхцөл", `/opt-out` "Татгалзах". Browser title format: `{page title} — Crystal Koi`; home uses `meta.siteTitle`.
+
+**Where the content goes in the spec:** nav text (spec 6), hero (spec 8.1), page meta (spec 3). In the nav, "Customer Stories" becomes `nav.stories`. Nav wiring now: logo → `/`; "Login" → `/login`; grey pill → `/book-a-call`; dark pill → `/get-started`; hero fill button → `/get-started`; hero ghost button → `/book-a-call`; scroll card → smooth scroll to `#studio` (if the anchor is missing, scroll one viewport down). Menu items "Бүтээгдэхүүн", "Сувгууд", "Нөөц" are inert in this part (visual only, `role="presentation"`); Part 3 turns them into dropdowns. "Амжилтын түүх" → `/stories`.
+
+## 11. Acceptance criteria (verify each; write results to `docs/verification-1.md`)
+
+1. The app builds and runs; the console has no errors or warnings on `/`, on every route, and after 10 route changes.
+2. At 1440×900 the hero matches the spec's measurements (headline 74u/68u at top 526u on two lines, subline 684u, buttons 742u, scroll card at 1202u/703u, 193u × 152u with its text on two lines) with the Mongolian text, and no hero text touches the scroll card.
+3. The letters Ө ө Ү ү render in Inter Tight (not a fallback font) in the hero, nav and buttons.
+4. Desktop nav: the menu and the right button group never overlap at 821, 1024, 1280, 1440 and 1920px.
+5. At 360, 390, 600, 768 and 820px the hero follows the spec's phone layout, at 821px and 1100px it is the scaled desktop hero; nothing overflows horizontally and no word is cut.
+6. With the GLB URL blocked, the site still works and shows no koi. With the video URL blocked, the day plate stays visible. With WebGL disabled, the plain video plays.
+7. Navigating through all routes keeps exactly two `<canvas>` elements and never restarts the video.
+8. With `prefers-reduced-motion: reduce`, the spec's reduced-motion behaviour applies, and toggling the setting live takes effect without reload.
+9. Hover ripples and 1° tilt work with a mouse, and do nothing on touch devices.
+10. Every link and button in the hero and navigation goes where section 10 says. The `docs/` and `README.md` files from section 8 exist.
+
+## 12. DESIGN SPEC (original, verbatim extracts)
+
+The three extracts below are the original spec, unchanged. They are written for another brand and for a single HTML file: sections 1 to 11 above beat them for stack, brand, text and fonts; they remain the source of truth for layout, measurements, colours, motion, the lens shader and the 3D fish. The rest of the spec is in Part 2.
+
+### SPEC EXTRACT A (verbatim from the original design spec; its section numbers are the spec's own)
+
+#### Nectarline — exact recreation prompt (title of the original spec; only its heading level is lowered here)
+
+Build a single-file, five-section landing page called **Nectarline** ("Supply Side Studio®"), a fictional self-serve programmatic-media curation product. The page sits on top of a fixed, full-viewport scene: a looping dusk lotus-pond video in the hero (drawn through a WebGL hover-ripple lens), which crossfades to a deep violet gradient for the middle sections and to a night version of the pond behind the footer. A 3D crystal-glass koi fish (a real GLB model rendered with Three.js) swims through every section, its position, size and heading driven by scroll, and its body bending in a swimming wave. All UI is ordinary HTML laid over that scene. Recreate it exactly as specified below: every text, colour, size, position, timing and formula is the real one.
+
+Everything is one HTML file: inline CSS, two inline scripts (one classic, one ES module), Three.js from a CDN import map. No build step, no framework.
+
+---
+
+## 1. Media and asset URLs (use these exact links, do not re-host)
+
+| Asset | URL | How it is used |
+|---|---|---|
+| Day plate (dusk lotus pond, still) | https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261104_151305_25ef1f45-0886-491c-a7a8-81e296402d5a.png&w=2400&q=85 | CSS background-image of the hero scene layer, cover, centred. Visible until the video has a frame, and on its own under reduced motion. |
+| Pond loop video (Kling 3.0, 5.04 s, 1276×720, 24 fps, no audio, first frame = last frame) | https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261104_160514_d8369d6e-d8ba-4532-9751-b32e0c8aaf75.mp4 | A muted, looping, playsinline, preload auto, crossorigin anonymous video. It is never shown directly: its frames are uploaded every animation frame as a WebGL texture and drawn through the ripple lens shader (section 9). The host sends Access-Control-Allow-Origin: *, which WebGL needs. |
+| Night plate (same pond at night, stars, dim glowing lotuses) | https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20261104_151304_3b7ab857-b4c2-4f5a-8d7f-e1ec429185a5.png&w=2400&q=85 | CSS background-image of the third scene layer, cover, centred; fades in behind the call-to-action and footer. |
+| Koi 3D model (Tripo H3.1 image-to-3D, about 6.2 MB GLB, one mesh, about 17.5k vertices, base-colour texture) | https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261104_151843_47d87652-1c40-465c-b0d6-cd94c22a9d3e.glb | Loaded with Three.js GLTFLoader. CORS is open on this host. |
+| Three.js 0.170.0 | https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js and the addons folder https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/ | Import map: "three" points at the module file, "three/addons/" at the addons folder. Use GLTFLoader (three/addons/loaders/GLTFLoader.js) and RoomEnvironment (three/addons/environments/RoomEnvironment.js). |
+
+There are no other images. Every icon, chart, badge, logo orb and decoration is inline SVG or CSS.
+
+## 2. Fonts
+
+| Family | Role | Weights used | File (latin subset, woff2) |
+|---|---|---|---|
+| Inter Tight | All UI and headlines (a free stand-in for Neue Haas Display) | variable 100–900; used at 300, 400, 500, 600 | https://fonts.gstatic.com/s/intertight/v9/NGSwv5HMAFg6IuGlBNMjxLsH8ag.woff2 |
+| Instrument Serif, italic | Single accent words inside headlines | 400 italic only | https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjjH7M.woff2 |
+| Fira Code | Labels, tags, numbers in tables, the typed bid request | 400 | https://fonts.gstatic.com/s/firacode/v27/uU9eCBsR6Z2vfE9aq3bL0fxyUs4tcw4W_D1sJVD7Ng.woff2 |
+
+Declare three @font-face rules with font-display swap: "Inter Tight" with font-weight range 100 900; "Instrument Serif" with font-style italic; "Fira Code". In the single-file deliverable the three files are embedded as base64 data URIs. Equivalently, the Google Fonts stylesheet for Inter Tight 300–600, Instrument Serif italic and Fira Code 400 gives the same faces. Font stacks: sans = "Inter Tight", system-ui, sans-serif; serif = "Instrument Serif", Georgia, serif; mono = "Fira Code", ui-monospace, monospace. Body text uses -webkit-font-smoothing antialiased.
+
+## 3. Head, colour tokens and base
+
+Title: "Nectarline — Supply Side Studio". Meta description: "The leading independent self-serve studio for curating programmatic supply." Viewport meta width=device-width, initial-scale=1. The html element starts with the class "anim" (entrance guard, section 10).
+
+| Token | Value | Use |
+|---|---|---|
+| ink | #f4f2ff | primary text |
+| ink-2 | rgba(236,232,255,.72) | body copy, secondary text |
+| ink-3 | rgba(220,214,255,.5) | captions, tags, table headers |
+| peri | #6f78ff | primary button, accent fills |
+| peri-2 | #8d94ff | accent text, hover of primary button, step numbers |
+| navy (page background) | #0d0830 | html and body background |
+| line | rgba(196,178,255,.15) | hairlines and dividers |
+| glass-hi (role card hover) | linear-gradient(160deg, rgba(120,100,255,.2), rgba(70,50,170,.14)) | |
+
+Reset: every element box-sizing border-box, margin 0, padding 0. Links inherit colour, no underline. Buttons inherit font and colour, no border, transparent background, pointer cursor. Body overflow-x hidden.
+
+## 4. Scaling system
+
+One design unit, u, is derived from a 1440 px wide frame: u = content width / 1440 on screens wider than 820 px, and content width / 390 at 820 px and below. Use the document's clientWidth (which excludes the scrollbar), set by script as the CSS custom property --u in px on load and on resize (the stylesheet fallback is 100vw/1440, or 100vw/390 in the small-screen query). Every desktop measurement below is in u; "40u" means calc(40 × var(--u)). On phones most rules switch to fixed px values (section 12).
+
+## 5. The fixed scene stack (behind everything)
+
+A fixed full-viewport container, z-index 0, pointer-events none, overflow hidden, aria-hidden. It holds four layers, each absolutely filling it, in this order (back to front):
+
+1. **Day plate**: background-image = day plate, cover, centred; will-change opacity and transform. Inside it: the pond video (absolute, 100%×100%, object-fit cover, opacity 0, transition opacity 1.2 s ease; it only becomes visible if WebGL is unavailable, by gaining a class that sets opacity 1), then the ripple canvas "pondfx" (absolute, 100%×100%, block, opacity 0, transition opacity 1.2 s ease; it gets opacity 1 on the video's first "playing" event).
+2. **Violet layer**: background linear-gradient(180deg, #160c40 0%, #0f0832 50%, #0b0626 100%), opacity 0. It is a flat gradient with no radial glows or blobs.
+3. **Night plate**: background-image = night plate, cover, centred, opacity 0. A ::after overlay darkens it for footer legibility: linear-gradient(180deg, rgba(13,8,40,.15) 0%, transparent 30%, rgba(13,8,40,.6) 58%, rgba(11,6,34,.94) 100%).
+4. **Koi canvas**: a full-viewport transparent WebGL canvas (Three.js renderer, alpha true, antialias true).
+
+Main content is position relative, z-index 1, above the scene.
+
+**Scroll crossfade** (runs on scroll and resize; h = viewport height, y = scrollY, smoothstep(a,b,v) = t²(3−2t) with t = clamp((v−a)/(b−a))):
+- toViolet = smoothstep(0.15h, 1.05h, y).
+- Day plate opacity = 1 − toViolet; its transform = scale(1 + 0.08·toViolet) translateY(−0.06·y px) (a slow push-in and parallax as you leave the hero).
+- toNight = smoothstep(endTop − 1.1h, endTop − 0.1h, y), where endTop is the CTA/footer section's offsetTop.
+- Violet layer opacity = toViolet × (1 − toNight). Night plate opacity = toNight.
+- The nav gets the class "scrolled" when y > 0.5h.
+- The pond video plays while toViolet < 0.999 and is paused otherwise (no decoding when it can't be seen).
+
+## 6. Navigation (fixed, z-index 20)
+
+Fixed bar: top 24u, left 36u, right 32u, height 52u, flex, items centred, space-between, font-size 16u.
+- **Logo** (link to #top): flex, gap 14u, weight 600, 23u, letter-spacing −0.01em. The orb before the word is a 34u circle: radial-gradient(circle at 32% 30%, #fff 0 8%, #cdb8ff 22%, #8a6cff 52%, #4b3bd6 78%), box-shadow 0 0 18u rgba(160,140,255,.55) plus an inset −4u −5u 10u rgba(40,20,140,.5). Text: "Nectarline".
+- **Centre menu**: absolutely centred (left 50%, translateX(−50%)), flex, gap 4u, padding 5u, radius 12u, background rgba(120,124,220,.28), 1 px border rgba(200,200,255,.22), backdrop-filter blur(14px) saturate(1.3). Items: "Product", "Channels", "Resources" (each followed by a 10u chevron: a 10×10 viewBox path M2 3.5 l3 3 3−3, stroke currentColor 1.4, opacity .8) and "Customer Stories" (no chevron). Item: flex, gap 7u, padding 10u 14u, radius 8u, weight 500, background transition .25 s; hover background rgba(255,255,255,.12). When the nav has "scrolled", the menu background becomes rgba(14,16,60,.55).
+- **Right group**: flex, gap 10u. "Login" (weight 500, padding 0 14u). Pill "Book a Call": grey glass (background rgba(120,124,200,.42), border rgba(210,210,255,.2), blur 10px). Pill "Get Started — it's Free": dark (#141a4d, border rgba(160,160,255,.18); hover #1c2363). Pills: inline-flex, height 46u, padding 0 17u, radius 10u, weight 500, nowrap; transitions .25 s; hover translateY(−1px).
+
+## 7. Shared components
+
+- **Button**: inline-flex, centred, height 49u, padding 0 18u, radius 11u, 16u, weight 500, nowrap, transition transform .25 s, box-shadow .3 s, background .3 s; hover translateY(−2px).
+  - fill: background #6f78ff, shadow 0 8u 26u rgba(90,96,255,.35); hover background #8d94ff, shadow 0 10u 34u rgba(110,116,255,.5).
+  - ghost: 1 px border rgba(230,226,255,.42), background rgba(255,255,255,.03); hover rgba(255,255,255,.1).
+  - white: #fff with text #14163f. dk: #11143f with a 1 px border rgba(160,160,255,.2).
+- **Accent text**: colour #8d94ff. **Serif accent**: Instrument Serif italic 400, letter-spacing 0.
+- **Lede**: 18u, line-height 1.55, ink-2, letter-spacing −0.005em.
+- **Glass surface** (cards, as on the original): background linear-gradient(160deg, rgba(110,90,240,.14), rgba(60,40,150,.08)); 1 px border rgba(205,190,255,.16); box-shadow inset 0 1px 0 rgba(255,255,255,.08) and 0 24u 60u rgba(8,3,30,.28); backdrop-filter blur(22px) saturate(1.35). The koi shows softly frosted through these cards; that is intended.
+- **Chip**: inline-flex, gap 6u, height 24u, padding 0 9u, radius 6u, Fira Code 11u, letter-spacing .02em, ink-2, background rgba(170,150,255,.1), border rgba(190,170,255,.12). Variant "up": text #7cf0bd, background rgba(80,220,160,.1), border rgba(80,220,160,.18). Variant "live": a 6u dot before the text, #5ee6a8 with a 0 0 8u #5ee6a8 glow, pulsing opacity to .35 at 50% over 2 s ease-in-out, infinite.
+- **Text link with arrow**: inline-flex, gap 10u, 16u, weight 500; the 16u arrow (path M2 8 h11 M9 4 l4 4 −4 4, stroke 1.5) moves right 4u on hover over .3 s.
+- **Icons**: bare line icons, no tile, no background, no border: a 24u box, opacity .85, holding a 22u-wide white SVG with stroke-width 1.3.
+- **Scroll reveal**: elements marked "reveal" start at opacity 0 and translateY(36u), with transition on opacity and transform of 1 s cubic-bezier(.2,.7,.2,1). An IntersectionObserver (threshold .15) adds the class "in" (opacity 1, no transform) once and then stops watching that element.
+
+## 8. Sections, top to bottom (desktop measurements)
+
+### 8.1 Hero (id hero), height 100vh, min-height 900u, position relative
+
+All children absolutely positioned on the 1440×900 frame:
+- **Headline** at left 67u, top 526u: weight 300, 74u, line-height 68u, letter-spacing −0.025em, two lines "Introducing" and "Nectarline". Each line is a block wrapper with overflow hidden and padding-bottom 6u, holding a block span (the span slides up inside its mask on entrance).
+- **Subline** at left 67u, top 684u: "Supply Side Studio" followed by a superscript ® at 0.55em; 20u, ink-2, letter-spacing −0.005em.
+- **Buttons** at left 67u, top 742u, flex, gap 11u: fill "Get Started — it's Free" and ghost "Book a Call".
+- **Scroll card** (a button) at left 1202u, top 703u, 193u × 152u, radius 10u, padding 16u 17u, background linear-gradient(160deg, rgba(120,128,255,.72), rgba(98,104,240,.62)), border rgba(210,210,255,.3), blur 16px, 27u, line-height 1.18, letter-spacing −0.01em, column flex with space-between. Text: "Scroll down" / "& discover". Bottom-right: a 22u white down-arrow (M11 3 v15 M5 12 l6 6 6 −6, stroke 1.6) that bobs 5u down and back over 2.2 s ease-in-out, infinite. Hover lifts the card 4u (.35 s). Clicking smooth-scrolls to the Studio section.
+
+### END OF SPEC EXTRACT A
+
+### SPEC EXTRACT B (verbatim from the original design spec; its section numbers are the spec's own)
+
+## 9. Hero hover lens (WebGL, matches the original's post effect)
+
+The pond is drawn into the "pondfx" canvas with WebGL 1. If WebGL is unavailable, or the program fails to link, show the plain video instead.
+- Canvas backing size = viewport × min(devicePixelRatio, 1.5), updated on resize.
+- One full-screen quad (two triangles over −1..1); vUv = position·0.5 + 0.5.
+- Texture: the video element, re-uploaded every frame (RGB, unsigned byte, flip-Y on, clamp to edge, linear filtering).
+- Cover fit: A = canvas aspect, V = video aspect (1276/720). If A > V then scale = (1, V/A), else scale = (A/V, 1). Multiply the scale by z = 0.975 (a slight zoom that leaves room for the tilt). Sampling: texture2D(tex, (uv − 0.5)·scale + 0.5 + tilt).
+- Fragment shader, exactly the original's ripple: dist = distance(vUv, mouse); ripple = sin(dist·20 − time·5)·0.006; strength = smoothstep(0.2, 0.0, dist)·presence; offset = normalize(vUv − mouse + 1e−5)·ripple·strength. Red is sampled at vUv + offset + (0.005, 0)·strength, green at vUv + offset, blue at vUv + offset − (0.005, 0)·strength. Output alpha is 1. This gives a circular ripple of about a fifth of the screen around the cursor, with a red/blue colour split at its edge.
+- time = seconds since the effect started. mouse = the pointer in uv (x/width, 1 − y/height). presence eases toward 1 while the pointer is in the window and toward 0 when it leaves, with rate k = 1 − e^(−6·dt). The mouse uniform keeps its last value while presence fades.
+- Tilt: target tx, ty = pointer mapped to −1..1 (u·2 − 1, v·2 − 1; 0 when the pointer leaves), eased with k = 1 − e^(−dt/0.1) (settles in about 0.3 s, like the original's 0.3 s easing). The tilt uniform = (tx·0.009·scale.x, ty·0.009·scale.y), about 1° at this field of view.
+- The loop runs on requestAnimationFrame but only draws when the video is ready (has played once), not paused and has data (readyState ≥ 2). dt is capped at 0.05 s.
+- Pointer state is shared by both scripts: one window pointermove listener sets u, v, tx, ty and inside = true; a pointerleave listener on the document element sets inside = false and tx = ty = 0.
+
+## 10. Hero entrance (one Web Animations timeline, run once)
+
+The html element starts with the class "anim"; while present, every element marked data-in has opacity 0. The script starts the animations below with fill "backwards" (so each holds its first keyframe during its delay), then removes "anim" on the next animation frame. A 3 s failsafe timeout also removes it. Easing for all: cubic-bezier(.2,.75,.2,1).
+
+| Element | From | To | Delay | Duration |
+|---|---|---|---|---|
+| Nav bar | opacity 0, translateY(−14px) | opacity 1, none | 0 ms | 900 ms |
+| Headline line 1 span | opacity 0, translateY(105%) | opacity 1, none | 250 ms | 1100 ms |
+| Headline line 2 span | opacity 0, translateY(105%) | opacity 1, none | 370 ms | 1100 ms |
+| Subline | opacity 0, translateY(12px) | opacity 1, none | 620 ms | 900 ms |
+| Hero buttons | opacity 0, translateY(14px) | opacity 1, none | 740 ms | 900 ms |
+| Scroll card | opacity 0, translateY(40px) scale(.96) | opacity 1, none | 880 ms | 1100 ms |
+
+## 11. The 3D koi (Three.js module)
+
+- **Renderer**: on the koi canvas, alpha true, antialias true, high-performance power preference, pixel ratio min(devicePixelRatio, 2), sRGB output, ACES filmic tone mapping at exposure 0.95. The size follows the window.
+- **Scene lighting**: environment = PMREM of RoomEnvironment (sigma 0.04); hemisphere light 0xc6b2ff / 0x2a1c80 at 0.7; key directional light 0xffc8f0 at 1.6 from (3, 5, 6); rim directional light 0x8c7bff at 2.8 from (−5, −1, −4). There is no glow sprite and no halo: the fish is drawn alone.
+- **Camera**: perspective, 30° vertical field of view, near 0.1, far 100, at (0, 0, 10) looking down −Z. Visible frustum at z = 0: height fh = 2·tan(15°)·10, width fw = fh·aspect.
+- **Model normalisation** (bake every mesh's world transform into its geometry first): take the bounding box; the longest axis is the fish's length. If it is Z, rotate +90° about Y; if Y, rotate −90° about Z. Then rotate 180° about Y so the nose points to +X (this Tripo model faces −X otherwise). Translate the box centre to the origin and scale uniformly so the length is 1. Recompute normals.
+- **Material** (replaces the model's own; keeps its base-colour texture as both map and emissive map): MeshPhysicalMaterial with colour 0xc9b4ff (0xb8a4ff if there is no texture), roughness 0.18, metalness 0.15, clearcoat 1, clearcoat roughness 0.1, iridescence 0.85, iridescence IOR 1.4, thickness range 260–700, emissive 0x7a46ff at intensity 0.55, sheen 0.25 with sheen colour 0xff9ce6, transparent at opacity 0.95, environment intensity 0.75, double-sided. This gives a lilac-pink crystal look that stays bright against the dark violet background.
+- **Swim deformation** (injected into the vertex shader in place of the begin_vertex chunk, using model-space position with the head at +X): tail = clamp((0.32 − x)/0.82, 0, 1); z += sin(x·freq − time·speed)·amp·(0.15 + 1.6·tail²); y += cos(x·freq·0.5 − time·speed·0.5)·amp·0.12·tail. Defaults: freq 5.2, speed 6.5, amp 0.075.
+- **Swim speed follows scroll**: track scroll velocity vel (pixels per second, smoothed: vel += (instant − vel)·0.1). speedUp = min(|vel|/1800, 1.4). The shader time advances by dt·(1 + speedUp) each frame, and amp = 0.07 + 0.03·speedUp.
+- **Scene graph**: rig (position and heading) → body (uniform scale) → mesh.
+- **Scroll choreography**: one pose per section. x and y are in half-viewport units (−1..1, x to the right, y up), s is the fish length as a share of viewport height, and yaw, pitch and roll are in radians (yaw about Y, where 0 faces right; pitch about Z, where negative is nose down; roll about X).
+
+| Pose | Scroll position where it applies (h = viewport height) | x | y | s | yaw | pitch | roll |
+|---|---|---|---|---|---|---|---|
+| hero | 0 | 0.02 | 0.16 | 0.72 | 0.18 | −0.92 | 0.05 |
+| statement | Studio section top + 0.2h | −0.66 | −0.6 | 0.42 | 0.5 | 0.2 | −0.1 |
+| dash | dashboard top + half its height − 0.5h | 0.5 | −0.5 | 0.46 | −0.35 | 0.32 | 0.1 |
+| packs | Packages section top + 0.3h | 0.4 | −0.78 | 0.5 | 0.55 | −0.05 | 0.08 |
+| uses | Use-cases section top + 0.3h | −0.42 | −0.42 | 0.6 | 3.0 (turned to face left) | 0.12 | −0.06 |
+| end | min(CTA/footer section top, maximum scroll) | −0.7 | 0.56 | 0.48 | 0.3 | −0.14 | 0.05 |
+
+  Section tops are page-absolute (bounding rect top + scrollY), recomputed on load and resize. Between two neighbouring poses, interpolate every value with easeInOutCubic of the scroll progress between their positions (4t³ below 0.5, otherwise 1 − (−2t + 2)³/2). Before the first pose use the first; after the last, the last.
+- **Per frame** (dt capped at 0.05 s, t = elapsed seconds): ease the current pose toward the target with k = 1 − e^(−3.2·dt) (k = 1 under reduced motion). Idle bob: y += sin(0.9t)·0.018. Position = (x·fw/2, (y + bob)·fh/2, 0). Rotation (XYZ order) = (roll + sin(0.7t)·0.04, yaw + sin(0.5t)·0.06, pitch). Scale = s·fh.
+- **Pointer tilt** (the original's TILT camera control): camera.rotation.y eases toward −tx·0.01745 and camera.rotation.x toward ty·0.01745 (1° maximum) with k = 1 − e^(−dt/0.1).
+- **Phone poses** (≤ 820 px wide) override only x, y and s: hero (0.12, 0.38, 0.46), statement (0.42, −0.72, 0.3), dash (−0.35, −0.74, 0.3), packs (0.38, −0.74, 0.3), uses (−0.3, −0.76, 0.32), end (0.3, −0.74, 0.32).
+
+### END OF SPEC EXTRACT B
+
+### SPEC EXTRACT C (verbatim from the original design spec; its section numbers are the spec's own)
+
+## 13. Reduced motion (prefers-reduced-motion: reduce)
+
+All CSS animations and transitions are off; the data-in elements and all reveal elements are visible immediately; the entrance timeline doesn't run. The pond video's source is removed, so the still day plate shows and there is no ripple lens. The bid request is shown fully typed with no caret animation. The koi snaps to each pose without easing (k = 1), with no idle bob, wobble or swim (the shader time stays fixed), and the renderer redraws only on scroll.
+
+### END OF SPEC EXTRACT C
+
+
+## 13. Reminder (highest priority, repeats the key rules)
+
+Brand is Crystal Koi, no ® signs, deal prefix `ck.`. All visible text comes from `src/content/`. The design never changes: spec sizes, spec letter-spacing, spec fonts (Fira Code for labels), spec breakpoint 820px, no minimum text sizes. Text is fitted to the design: never shrink fonts to fit Mongolian. The scene lives above the router and is mounted once. Any scene failure leaves a working site, and the koi is only ever the real 3D model, never an image. Only the packages allowed in Part 0; Three.js from the `three` package. Code follows `docs/ENGINEERING.md`.
+
+
+---
+
+# PART 2 — HOME SECTIONS AND FOOTER
+
+## 0. How to read this part
+
+Same layers as Part 1: **OVERRIDES** (sections 1–7) beat **CONTENT** (section 8), which beats the **DESIGN SPEC** (section 10) for text, brand and structure; the spec stays the source of truth for measurements, colours and motion. Follow `docs/ENGINEERING.md` and the tokens in `src/styles/tokens.css` from Part 1. Work in this order: (a) write a short plan to `docs/plan-2.md`; (b) implement; (c) check section 9 and record pass/fail in `docs/verification-2.md`.
+
+## 1. Scope
+
+Fill the four anchor sections of the home page (`studio`, `packs`, `uses`, `end`) and build the shared `SiteFooter` and `CtaPanel`. Do not change the scene, hero or navigation except for the wiring in section 6. No backend, no forms (Part 4), no inner pages (Part 3).
+
+## 2. Overrides to the design spec
+
+- Brand and text follow Part 1's rules: "Nectarline" → `brand.name`, `nl.` → `ck.` (including the typed bid request, whose deal `id` becomes `"ck.pond.0428"`), no ® sign, all strings from `src/content/`.
+- **The spec's small-screen section (12) applies at 820px and below**, exactly as the spec says, with `u = width / 390`. Above 820px the desktop layout scales with `u`.
+- **Fonts and sizes are the spec's.** Every eyebrow, tag, chip, table heading and column heading uses Fira Code, as in the spec (it contains Ө ө Ү ү). Headline and title sizes come from the tokens in `src/styles/tokens.css` (Part 1), which hold the spec's values. Do not shrink anything to fit text; the Mongolian text in section 8 was fitted to the design.
+- **Charts are hand-drawn SVG** exactly per the spec's formulas (seeded generator, cubic paths). Do not add a chart library. Put the pure functions (`seededSeries`, `buildSmoothPath`, `normalise`) in `src/lib/chartMath.js` so they can be unit-tested.
+- **Use-case staircase is built exactly as the spec**: a container 880u tall; four cards absolutely positioned, 310u wide, `min-height: 420u`, at (left, top) = (0, 0), (334u, 150u), (668u, 300u), (1002u, 450u); the heading block absolutely positioned at right 64u, top 150u, width 600u, right-aligned, its lede max-width 440u. No `text-wrap: balance`, no measuring logic. On the phone layout the cards stack in normal flow.
+- Dashboard rows use `min-height` where the spec has it; set `min-width: 0` on flex children so nothing can push a row wider. The labels in section 8 were measured to fit on one line.
+- **Footer wordmark** uses `--fs-wordmark` (236u, phone 76px), `white-space: nowrap`, centred, with the spec's gradient clip. "Crystal Koi" fits the container at every width.
+- **Footer additions** (new, not in the spec), inside the brand column under the status chip, 22u below it:
+  - small heading `footer.contactHeading` (same style as the column headings);
+  - address line with a 16u map-pin line icon, linking to `contact.mapHref` in a new tab (`rel="noopener noreferrer"`);
+  - phone line with a 16u phone line icon, linking to `contact.phoneHref`, showing `contact.phoneDisplay`;
+  - a row of social buttons (gap 10u, 38u round, 1px border in the line colour, hover background `rgba(255,255,255,.1)`, 22u `FacebookIcon` / `InstagramIcon` from Part 1), shown only for non-empty `social` values, each with the `aria-label` from `footer`.
+  - Lines are 15u, `ink-2`, 10u apart, hover white; icons at opacity .8. On the phone layout the brand column spans both footer columns.
+- The status chip "Бүх систем хэвийн" is a `<Link>` to `/resources/status`.
+- The copyright line is `©{new Date().getFullYear()} {brand.name}: {brand.descriptor}`.
+
+## 3. Technology map
+
+| Part | Implementation | File |
+|---|---|---|
+| Stats, cards, steps, chips | plain components reading `src/content/homeContent.js` | `src/components/home/` |
+| Rich headline text | `RichText` renders an array of strings and `{ accent }` / `{ serif }` objects as text nodes and styled spans (accent colour `#8d94ff`; serif = serif italic stack) | `src/components/ui/RichText.jsx` |
+| Reveal | `useReveal` (IntersectionObserver, one-shot; shows immediately if IntersectionObserver is missing) | `src/hooks/useReveal.js` |
+| Dashboard data | `chartMath.js` + `DashboardChart.jsx`; range state (`7`, `30`, `90`) in `useState` | `src/components/home/dashboard/` |
+| Draw-in animation | CSS transitions on `stroke-dashoffset` and width, triggered by the dashboard's reveal class; re-triggered when the range changes | `dashboard.css` |
+| Bid request typing | `useTypewriter` hook (timers in refs, cleared on unmount, starts when 30% visible, loops per the spec) | `src/hooks/useTypewriter.js` |
+| Steps highlight | CSS transition on reveal | `StepsStrip.jsx` |
+| Footer | `SiteFooter` (shared by every page) and `CtaPanel` (shared) | `src/components/layout/` |
+| Anchors | each home section has its id; `measureAnchors()` from Part 1 picks them up | `src/pages/Home.jsx` |
+
+## 4. Dashboard behaviour (new, beyond the spec)
+
+- The range control "7х / 30х / 90х" works. State sets the series length `n` (7, 30 or 90); the area chart is regenerated with the same seeds and formulas, the marker moves to point `round(22 / 29 * (n − 1))`, and the draw-in animation replays. KPI tiles, bars and the table stay as they are (this is a product illustration).
+- "+ Шинэ deal" is a `<Link>` to `/get-started`.
+- Search field, sidebar and table rows are illustration only: not focusable, `aria-hidden="true"`. The dashboard root has `aria-label="Бүтээгдэхүүний самбарын жишээ"`, the range control is a `role="group"` of buttons with `aria-pressed`.
+- Respect reduced motion: no draw-in, final state immediately.
+
+## 5. Motion rules (no errors on scroll)
+
+- Every reveal is one-shot and independent of `window.load`. Elements already in view when the page mounts are revealed on mount. Navigating away and back re-runs reveals because components remount.
+- Timers, observers and listeners are cleaned up on unmount; the typewriter never writes to state after unmount.
+- Fast scrolling past an element must still end with it revealed (IntersectionObserver `rootMargin: '0px 0px -10% 0px'`, and also reveal when the element is fully above the viewport).
+- The typed bid request area has a fixed height (spec: 250u) so typing never shifts layout.
+- Anchor links use `scrollIntoView({ behavior })` with `behavior: 'auto'` under reduced motion, and `scroll-margin-top: 90px` on the anchor sections.
+
+## 6. Wiring (every button goes somewhere)
+
+| Element | Goes to |
+|---|---|
+| Studio fill button | `/get-started` |
+| Studio ghost button | `/book-a-call` |
+| Packages white button "Амжилтын түүх" | `/stories` |
+| Packages dark button | `/book-a-call` |
+| Package card 1 / 2 / 3 link | `/product/curation` / `/channels/ctv` / `/product/forecasts` |
+| Use-case card links | `/use-cases/media-agency`, `/use-cases/direct-advertiser`, `/use-cases/publisher`, `/use-cases/ad-tech` (in card order) |
+| CTA fill / ghost | `/get-started` / `/book-a-call` |
+| Footer links | the `to` values in `footer` content; legal links from `footer.legalLinks` |
+
+All of these are `<Link>` elements styled as the spec's buttons or text links.
+
+## 7. Copy-fit rule for Mongolian text
+
+- The Mongolian strings in section 8 were measured with the real font files at the spec's sizes: each takes no more lines than the English original of its slot, and each single-line label fits its box. Keep them exactly; do not change sizes to make anything fit.
+- Any string added later must pass the same test: if it needs more lines than the English original, shorten the text.
+- Cards, panels and tiles keep the spec's `min-height`; they do not get fixed heights. Use-case cards may have a four-line body, because their `min-height: 420u` leaves room.
+
+## 8. Content (Mongolian). Create `src/content/homeContent.js` exactly; do not reword
+
+```js
+// Stats are sample figures; replace them with real numbers before launch.
+export const studio = {
+  headline: [
+    'Програматик худалдан авагч бүрт зориулсан',
+    { br: true },
+    { accent: 'өөрөө удирддаг сонгон бүрдүүлэлтийн студи' },
+  ],
+  lede: 'Үнийн санал тавихаасаа өмнө нийлүүлэлтээ хэлбэржүүл. Нэг тайван ажлын орчноос хувийн deal-ээ багцалж, таамаглаж, эхлүүлээрэй.',
+  primaryCta: 'Үнэгүй эхлэх',
+  secondaryCta: 'Уулзалт товлох',
+  stats: [
+    { value: '2.4 тэрбум', caption: ['өдөр бүр хэлбэржүүлдэг', 'bid request'] },
+    { value: '48 сек', caption: ['брифээс deal ID үүсэх', 'дундаж хугацаа'] },
+    { value: '120+', caption: ['нийлүүлэлтийн түнш', 'нэг ажлын орчинд'] },
+    { value: '0%', caption: ['худалдан авагчийн талын', 'нэмэлт шимтгэл'] },
+  ],
+};
+
+export const dashboard = {
+  ariaLabel: 'Бүтээгдэхүүний самбарын жишээ',
+  breadcrumb: ['Deal-үүд', 'Хаврын стриминг багц'],
+  search: 'Deal хайх',
+  liveChip: 'Идэвхтэй',
+  avatar: 'PM',
+  sidebar: {
+    workspace: 'АЖЛЫН ОРЧИН',
+    library: 'САН',
+    items: [
+      { label: 'Гүйцэтгэл', active: true },
+      { label: 'Deal-үүд', count: '24' },
+      { label: 'Таамаглал' },
+      { label: 'Баг' },
+    ],
+    libraryItems: [
+      { label: 'Аудиторууд', count: '38' },
+      { label: 'Контекст', count: '61' },
+      { label: 'Домэйн оноо' },
+      { label: 'CTV багцууд', count: '12' },
+    ],
+  },
+  title: 'Deal-ийн гүйцэтгэл',
+  trend: '▲ 18.4% өмнөх үеэс',
+  ranges: [
+    { value: 7, label: '7х' },
+    { value: 30, label: '30х' },
+    { value: 90, label: '90х' },
+  ],
+  newDeal: '+ Шинэ deal',
+  kpis: [
+    { label: 'Зарцуулалт', value: '$184.2K', delta: '+12%' },
+    { label: 'Хожилтын хувь', value: '29.6%', delta: '+3.1pt' },
+    { label: 'eCPM', value: '$9.42', delta: '−4%', neutral: true },
+    { label: 'Идэвхтэй deal', value: '24', delta: '+5' },
+  ],
+  chartTitle: 'Зарцуулалт ба хожилтын хувь',
+  legend: ['Зарцуулалт', 'Хожилтын хувь'],
+  mixTitle: 'Форматын харьцаа',
+  mix: [
+    { label: 'CTV', value: 38 },
+    { label: 'Display', value: 27 },
+    { label: 'Онлайн бичлэг', value: 19 },
+    { label: 'Аудио', value: 10 },
+    { label: 'DOOH', value: 6 },
+  ],
+  tableHead: ['Deal', 'Суваг', 'Доод үнэ', 'Хожилт', 'Төлөв'],
+  rows: [
+    { name: 'Хаврын стриминг багц', channel: 'CTV', floor: '$18.50', winRate: '31.2%', status: 'live' },
+    { name: 'Авто худалдан авагчдын аудитор', channel: 'Display', floor: '$4.80', winRate: '27.9%', status: 'live' },
+    { name: 'Тайван цагийн аудио', channel: 'Аудио', floor: '$6.20', winRate: '—', status: 'forecasting' },
+  ],
+  status: { live: 'Идэвхтэй', forecasting: 'Таамаглал' },
+};
+
+export const packs = {
+  headline: ['Зоригтой сонго, цаашаа хар, хурдан тохируул, ', { accent: 'үнэнийг ' }, { serif: 'хяна.' }],
+  lede: 'Бэлэн багцаас эхэлж, брифдээ тааруулаад, нэг deal ID-г хүссэн худалдан авалтын платформ руу илгээ.',
+  primaryCta: 'Амжилтын түүх',
+  secondaryCta: 'Уулзалт товлох',
+  code: { file: 'bid_request.json', protocol: 'OpenRTB 2.6', deal: 'deal ck.pond.0428', ready: 'бэлэн' },
+  cards: [
+    { index: '01', eyebrow: 'АУДИТОРООР ДАВХАРЛАСАН', title: 'Бэлэн худалдан авагчдад хүр',
+      body: 'Нийтлэгчийн өөрийн өгөгдөл, найдвартай аудиторийг нийлүүлэлт дээр давхарлана.',
+      metricLabel: 'Хүрээний дундаж өсөлт', metric: '+24%', linkLabel: 'Эдгээр deal-ийг авах', to: '/product/curation' },
+    { index: '02', eyebrow: 'CTV БАГЦУУД', title: 'Үзэж буй дэлгэцүүд',
+      body: 'Тодорхой контекст, жанрт тохируулсан стриминг нөөц.',
+      metricLabel: 'Үзэж дуусгах хувь', metric: '96%', linkLabel: 'Эдгээр deal-ийг авах', to: '/channels/ctv' },
+    { index: '03', eyebrow: 'ГҮЙЦЭТГЭЛ', title: 'Хөрвүүлэлтээ өсгө',
+      body: 'Таны чухалчилдаг KPI руу чиглүүлэхээр сонгосон байршлууд.',
+      metricLabel: 'CPA-ийн дундаж өөрчлөлт', metric: '−17%', linkLabel: 'Эдгээр deal-ийг авах', to: '/product/forecasts' },
+  ],
+  steps: [
+    { lead: 'Багцаа сонгоод тохируул', text: 'Аудитор, контекст, чанарын дүрмээ давхарлана.' },
+    { lead: 'Таамаглалаа хар', text: 'Хүрээ, доод үнэ, үнийн саналын зөвлөмжийг урьдчилан харна.' },
+    { lead: 'Deal ID-г секундэд үүсгэ', text: 'Аль ч худалдан авалтын платформ дээр минутын дотор ажиллуул.' },
+  ],
+};
+
+export const uses = {
+  headline: ['Нийлүүлэлттэй ', { serif: 'харьцдаг' }, ' хүн бүрт зориулсан.'],
+  lede: 'Нэг ажлын орчин, дөрвөн орох хаалга. Баг бүр хэрэгтэй хяналтаа авна, илүү зүйлгүйгээр.',
+  tag: 'ХЭРЭГЛЭЭНИЙ ТОХИОЛДОЛ',
+  linkLabel: 'Одоо үзэх',
+  cards: [
+    { title: 'Медиа агентлаг',
+      body: 'Сонгон бүрдүүлэлтгүй програматик бол зүгээр л шуугиан. Сувгаа өөрөө эзэмш, эс бөгөөс суваг чамайг эзэмшинэ.',
+      chips: ['Олон хэрэглэгч', 'Маржийн хяналт'], to: '/use-cases/media-agency' },
+    { title: 'Шууд сурталчлагч',
+      body: 'Нийлүүлэлтийг хутгахгүй, хэлбэржүүлбэл брэнд хождог. Хэрэггүйг хас, чухлыг үлдээ.',
+      chips: ['Брэнд хамгаалалт', 'Үр дүн KPI'], to: '/use-cases/direct-advertiser' },
+    { title: 'Нийтлэгч',
+      body: 'Худалдан авагчийн талын маржийг санхүүжүүлэхээ боль, өөрөө авч үлд. Завсрын алхам бүр хувь авдаг, тэдгээрийг хас.',
+      chips: ['Өөрийн багц', 'Аудитор тэлэлт'], to: '/use-cases/publisher' },
+    { title: 'Ad Tech',
+      body: 'Ил тод байдал бол онцлог биш, хүчилтөрөгч юм. Манлайлагчид нөөцийг хүлээдэггүй, бүгдийг өөрсдөө хэлбэржүүлдэг.',
+      chips: ['Нээлттэй API', 'White-label'], to: '/use-cases/ad-tech' },
+  ],
+};
+
+export const cta = {
+  headline: ['Нийлүүлэлтээ', { br: true }, { serif: 'сонгон бүрдүүлж' }, ' эхэл!'],
+  lede: 'Үнэгүй эхэлнэ. Таны анхны сонгомол deal кофе чинь хөрөхөөс өмнө ажиллаж эхэлж болно.',
+  primaryCta: 'Үнэгүй эхлэх',
+  secondaryCta: 'Уулзалт товлох',
+  note: 'Карт шаардахгүй  ·  Минутын дотор ажиллана  ·  Хүссэн үедээ цуцлана',
+};
+
+export const footerContact = {
+  addressLabel: 'Хаяг',
+  phoneLabel: 'Утас',
+};
+```
+
+Spec details that stay as written in the spec and are not in this file: the typed JSON text, KPI colours, bar colours, icons, chart seeds. The dashboard table's status "live" renders the spec's live chip with `dashboard.status.live`; "forecasting" renders the plain chip with `dashboard.status.forecasting`. The footer's links, column headings, legal links and about text come from `footer` in `siteContent.js` (Part 1).
+
+## 9. Acceptance criteria (record results in `docs/verification-2.md`)
+
+1. No console errors or warnings while scrolling the whole home page top to bottom, quickly and slowly, up and down, at 1440, 1100, 821, 768 and 390px.
+2. At 1440px: stats row, dashboard, package cards and steps match the spec's measurements; staircase card lefts are 0, 334u, 668u, 1002u and top offsets 0, 150u, 300u, 450u relative to the first card; the heading block does not overlap card 3.
+3. Mongolian text never overflows a card, tile, pill, chip or table cell at 360, 390, 768, 820, 821, 1100, 1440 and 1920px, and every headline, lede and card body takes the same number of lines as the English original. `document.documentElement.scrollWidth <= window.innerWidth` at all of them.
+4. The range control switches the chart between 7, 30 and 90 points and replays the draw-in; the marker follows; no console output.
+5. The bid request types, loops, and stops cleanly when navigating away (no timers keep running: verify by navigating to `/contact` and back several times).
+6. Every button and link listed in section 6 navigates to the right route. The status chip opens `/resources/status`.
+7. Footer: address opens the map in a new tab, the phone link is `tel:+97690070740`, Facebook and Instagram icons appear only when `social` has values, wordmark fits at 360–1920px.
+8. Scroll crossfade (pond → violet → night) and the koi's six poses work through all four sections, including after resize and after font load, because anchor positions are re-measured.
+9. Reduced motion shows everything immediately, the bid request fully typed, charts fully drawn.
+10. Hash links: opening `/#studio` scrolls to the Studio section after load.
+
+## 10. DESIGN SPEC (original, verbatim extracts)
+
+The three extracts below are the rest of the original spec, unchanged; the first part of it is in Part 1. The same layer rule applies: sections 1 to 9 above beat them for stack, brand and text.
+
+### SPEC EXTRACT D (verbatim from the original design spec; its section numbers are the spec's own)
+
+### 8.2 Studio (id studio), centred, padding 300u 64u 150u
+
+- **Headline** (reveal): weight 300, 52u, line-height 1.1, letter-spacing −0.028em, max-width 1240u, margin 22u auto 0. Text: "The leading independent " + accent "self-serve curation studio" + line break + "for all programmatic media buyers."
+- **Lede** (reveal), max-width 600u, margin-top 22u: "Shape supply before you bid. Package, forecast and launch private deals from one calm workspace."
+- **Buttons** (reveal), centred, gap 10u, margin-top 34u: fill "Get started — it's free", ghost "Book a Call".
+- **Stats row** (reveal): a 4-column grid, max-width 1060u, margin 72u auto 0, hairline top and bottom borders (line colour), vertical hairlines between cells. Each cell has padding 24u 20u and is left-aligned; the number is weight 300, 40u, letter-spacing −0.03em, line-height 1; the caption is 14u, ink-3, line-height 1.4, margin-top 10u. Cells: "2.4B" / "bid requests shaped" ↵ "every day"; "48s" / "median time from brief" ↵ "to live deal ID"; "120+" / "supply partners" ↵ "in one workspace"; "0%" / "buy-side markup" ↵ "on curated media". These figures are placeholder copy for the fictional brand.
+- **Product dashboard** (reveal, id dash): max-width 1220u, margin 80u auto 0, radius 16u, background linear-gradient(180deg, rgba(30,20,78,.86), rgba(20,13,56,.9)), border in the line colour, box-shadow 0 50u 140u rgba(6,2,30,.7), a 7u ring rgba(150,120,255,.05), an inset top highlight rgba(255,255,255,.06); overflow hidden; 13u base text. A 1 px highlight line runs along the top edge from 10% to 90%: linear-gradient(90deg, transparent, rgba(200,180,255,.7), transparent).
+  - **Top bar**: height 54u, padding 0 18u, flex, gap 16u, hairline bottom border rgba(190,170,255,.09). Contents: a mini logo (20u orb + "Nectarline", 15u); a breadcrumb in ink-3 "Deals  /  " + bold ink "Spring Streaming Pack"; a flexible spacer; a search field 230u × 32u (radius 8u, background rgba(170,150,255,.07), border rgba(190,170,255,.1), a magnifier icon, "Search deals", and a "⌘K" key cap in Fira Code 10u on rgba(255,255,255,.06)); a live chip "Live"; a 30u round avatar "PM" (linear-gradient(135deg, #7a5cff, #c070ff), 11u, weight 600).
+  - **Body**: a grid with a 196u sidebar and a flexible main column.
+  - **Sidebar**: padding 14u 12u, hairline right border, column with 2u gaps. Group headings in Fira Code 10u, tracking .1em, ink-3: "WORKSPACE", then "LIBRARY" (16u above, 6u below). Items (padding 8u 10u, radius 7u, gap 10u, ink-2, a 15u line icon at opacity .8, an optional count on the right in Fira Code 10u ink-3): "Performance" (active: background rgba(140,120,255,.16), white text, a 2 px inset left bar in #8d94ff), "Deals 24", "Forecasts", "Team", then "Audience Layers 38", "Contextual 61", "Domain Scoring", "CTV Packages 12".
+  - **Main**: padding 20u 22u 22u. Header row (flex, gap 12u): "Deal performance" (weight 400, 21u, tracking −0.015em); an up chip "▲ 18.4% vs last period"; a segmented control on the right (padding 3u, radius 8u, background rgba(170,150,255,.07), border rgba(190,170,255,.1); options "7D", "30D" (active, background rgba(255,255,255,.1), white), "90D", each 12u with padding 5u 11u); a small button "+ New deal" (32u tall, padding 0 13u, radius 8u, #6f78ff, 12u, weight 500).
+  - **KPI tiles**: 4 columns, gap 12u, margin-top 18u; each tile has padding 14u 16u, radius 10u, background rgba(70,52,160,.22), border rgba(190,170,255,.08); label 12u ink-3; value row (space-between, baseline): value weight 400, 24u, tracking −0.02em, plus a chip (up variant unless negative). Under it a 30u sparkline (full width). Tiles: Spend "$184.2K" "+12%" colour #9b8cff; Win rate "29.6%" "+3.1pt" #ff8fd8; eCPM "$9.42" "−4%" (neutral chip) #7fd6ff; Deals live "24" "+5" #7cf0bd.
+  - **Chart row**: grid 1.75fr / 1fr, gap 12u, margin-top 12u. Panes have padding 16u, radius 10u, background rgba(70,52,160,.18), border rgba(190,170,255,.08), heading 13u weight 500 ink-2. Left pane "Spend & win rate" with a legend on the right (8u square swatches: Spend #9b8cff, Win rate #ff8fd8; 11u ink-3), then a 190u-tall area chart. Right pane "Format mix" with five horizontal bars (gap 14u, margin-top 18u): label row 12u ink-2 with the value in Fira Code ink-3 on the right; track 6u tall, fully rounded, rgba(190,170,255,.08); fill a horizontal gradient from the colour to the colour at about 67% alpha. Bars: CTV 38% #9b8cff, Display 27% #7fd6ff, Online video 19% #ff8fd8, Audio 10% #ffc27a, DOOH 6% #7cf0bd. Each fill's width is value/38 × 100% (CTV fills the track).
+  - **Deals table**: margin-top 12u, radius 10u, border rgba(190,170,255,.08). Rows: a grid of 2.2fr 1fr 1fr 1fr 1fr, padding 11u 16u, 12.5u ink-2, hairline separators rgba(190,170,255,.07). Header row: background rgba(70,52,160,.18), Fira Code 10.5u, tracking .06em, uppercase, ink-3: Deal, Channel, Floor, Win rate, Status. Rows: bold "Spring Streaming Pack" / CTV / $18.50 / 31.2% / live chip "Live"; "Pondside In-Market Auto" / Display / $4.80 / 27.9% / "Live"; "Quiet Hours Audio" / Audio / $6.20 / — / plain chip "Forecasting". Numbers are in Fira Code.
+  - **Chart generation** (deterministic): a seeded generator s ← (s × 9301 + 49297) mod 233280, r = s/233280. series(n, seed, base, amp, trend)[i] = base + trend·i/(n−1) + sin(i·0.9 + seed)·amp·0.5 + (r − 0.5)·amp. Curves are smooth cubic paths: each segment from point q to p uses control points (mid-x, q.y) and (mid-x, p.y).
+    - Sparklines: viewBox 200×30 stretched to fit; series(14,3,20,7,10), (14,7,18,6,9), (14,11,22,6,−6), (14,5,12,4,14); x = i·200/13; y = 28 − normalised(v)·24. Each has a fill under the line from the colour at .35 to 0 opacity, and a 1.6 px non-scaling stroke.
+    - Area chart: viewBox 600×190 stretched; 5 horizontal grid lines at y = 12 + i·41.5 in rgba(190,170,255,.08); Spend = series(30,2,90,26,60), Win rate = series(30,9,70,22,30); max = largest value + 10; x = i·600/29; y = 190 − 12 − (v/max)·160. Fills from #9b8cff at .42 and #ff8fd8 at .22 down to 0. Strokes 2 px (#9b8cff) and 1.6 px (#ff8fd8), non-scaling. A marker at Spend point 22: a dashed vertical line rgba(220,210,255,.25) and a 4.5-radius dot (fill #1a1150, stroke #b9adff, 2 px).
+  - **Draw-in on reveal**: every line uses pathLength 1 with stroke-dasharray 1 and stroke-dashoffset 1, and a transition on stroke-dashoffset of 1.8 s cubic-bezier(.2,.7,.2,1) (the win-rate line is delayed .2 s). Fills and the marker fade in over 1 s after a .9 s delay. Bar fills transition their width over 1.4 s on the same curve from 0. When the dashboard is revealed, set every dash offset to 0 and every bar to its width.
+
+### 8.3 Packages (id packs), padding 190u 64u 160u
+
+- **Split row**: a grid of 1fr / 520u, gap 80u, items aligned to the bottom, margin-bottom 72u.
+  - Left (reveal): headline weight 300, 52u, line-height 1.1, tracking −0.028em, margin-top 22u, max-width 700u: "Choose boldly, look ahead, shape supply, tune fast, " + accent ("track " + serif italic "truth."). Lede max-width 560u, margin-top 22u: "Start from a curated package, tune it to your brief, then push one deal ID to any buying platform you already use." Buttons (gap 10u, margin-top 32u): white "Customer Stories", dk "Book a Call".
+  - Right (reveal, aria-hidden): a code block with **no panel**: no background, no border, no blur, no divider lines. Header row (height 30u, Fira Code 12u ink-2): "bid_request.json" on the left and plain text "OpenRTB 2.6" on the right. Code area: padding 14u 0 6u, Fira Code 13u, line-height 1.6, colour rgba(214,204,255,.72), white-space pre, fixed height 250u, overflow hidden. Footer row (padding-top 10u, Fira Code 12u ink-3): "deal nl.pond.0428" on the left and the live dot + "ready" on the right, both plain with no chip fill or border.
+  - **Typing**: the code area types out this text one character at a time (22 ms per character, 120 ms after each newline), followed by a block caret (0.55em × 1.1em, rgba(214,204,255,.8), blinking with steps(2) every 1 s). After the last character it waits 3.2 s and starts again from empty. It starts the first time 30% of the block is visible. The text, exactly, with two-space indents per level:
+    "id": "7f3a9c1e00b24d6e8a51c0ffee42d0e1",
+    "at": 2,
+    "tmax": 120,
+    "imp": [{
+      "id": "1",
+      "pmp": {
+        "private_auction": 1,
+        "deals": [{
+          "id": "nl.pond.0428",
+          "bidfloor": 4.8,
+          "at": 1,
+          "ext": { "priority": 1 }
+- **Package cards**: a 3-column grid, gap 20u. Each card is a glass surface (the first one overrides it), reveal (delays 0, .08 s, .16 s), min-height 400u, radius 12u, padding 28u 30u, column flex, overflow hidden; transition transform .5 s cubic-bezier(.2,.7,.2,1); hover lifts 6u and sets the border to rgba(200,180,255,.32).
+  - Card anatomy: a top row with an index in Fira Code 12u ink-3 ("01", "02", "03") on the left and a bare icon on the right; an eyebrow in Fira Code 12u, tracking .08em, ink-2, 46u below; a title at weight 400, 32u, line-height 1.12, tracking −0.022em, 12u below; body 16.5u, line-height 1.5, ink-2, 14u below; a meta row pushed to the bottom (padding-top 22u, 1 px top border rgba(210,195,255,.16), flex, space-between, bottom-aligned) with a small 12u ink-3 caption above a metric (weight 300, 30u, tracking −0.03em) on the left, and a text link "Get these deals →" on the right.
+  - Card 1 (lead): background linear-gradient(155deg, #7a72ff 0%, #6457ee 55%, #7b4fe0 100%), border rgba(230,220,255,.35), shadow 0 30u 80u rgba(90,70,240,.3); index and caption at rgba(255,255,255,.7), body at rgba(255,255,255,.82). Crosshair icon (circle r6, circle r2, four ticks). "AUDIENCE-LAYERED" / "Reach Buyers Ready to Act Now" / "Publisher first-party signals plus trusted audiences, layered supply-side." / "Avg. reach lift" "+24%".
+  - Card 2: screen icon (a rounded 14×9 rect and a stand line). "CTV PACKAGES" / "Screens Watched" / "Streaming inventory tuned toward a given context or genre." / "Completion rate" "96%".
+  - Card 3: trend-arrow icon. "PERFORMANCE" / "Lift Conversion Now" / "Placements curated to steer toward the KPIs you care about." / "Avg. CPA change" "−17%".
+- **Steps strip** (reveal): an ordered list as a 3-column grid, gap 20u, margin-top 56u. Each item: flex, gap 16u, padding-top 22u, 1 px top border in the line colour, 16u ink-2, line-height 1.45. Before it, a counter "01"/"02"/"03" in Fira Code 12u #8d94ff. A highlight line on the top border (linear-gradient(90deg, #8d94ff, transparent)) grows from 0 to 60% width over 1.4 s when the strip is revealed. Bold ink lead-ins: "Pick a package, then tune it" + "Layer audiences, context and quality rules."; "Review the forecast" + "See reach, floors and bidding guidance up front."; "Generate deal IDs in seconds" + "Activate on any buying platform, live in minutes."
+
+### 8.4 Use cases (id uses), padding 150u 64u 220u
+
+- **Heading block** in the empty top-right of the staircase, absolutely positioned: right 64u, top 150u, width 600u, right-aligned, above the cards. Headline (reveal) weight 300, 52u, line-height 1.1, tracking −0.028em: "Built for everyone" ↵ "who " + serif italic "touches" + " supply." Lede (reveal) max-width 440u, margin 20u 0 0 auto: "One workspace, four ways in. Every team gets the controls it needs, and nothing it doesn't."
+- **Stepped staircase** of four glass role cards inside a container 880u tall. Each card is absolutely positioned, 310u wide, min-height 420u, radius 12u, padding 26u 26u 24u, column flex, reveal. Positions (left, top): card 1 (0, 0); card 2 (334u, 150u); card 3 (668u, 300u); card 4 (1002u, 450u); reveal delays 0, .06 s, .12 s, .18 s. Hover lifts 8u (.5 s), switches the background to glass-hi and the border to rgba(200,180,255,.3).
+  - Card anatomy: a top row with a plain tag "USE CASE" (Fira Code 11u, tracking .12em, ink-3, **no background, no border, no padding**) and a bare icon; a title at weight 400, 29u, tracking −0.02em, 64u below; body 16u, line-height 1.5, ink-2, 14u below; two feature chips (normal chip style, gap 6u, wrap, 20u below); a link "Explore now →" pushed to the bottom with padding-top 22u and a 1 px top border rgba(210,195,255,.12).
+  - Cards: "Media Agency" (briefcase icon) / "Programmatic without curation is just noise. Own the pipes, or let the pipes own you." / chips "Multi-client seats", "Margin control". "Direct Advertiser" (megaphone icon) / "Brands win when supply is shaped, not shuffled. Cut the clutter. Keep only what counts." / "Brand safety", "Outcome KPIs". "Publisher" (document icon) / "Stop funding buy-side margins. Keep them. Every hop takes a cut. Remove those hops." / "O&O packaging", "Audience extension". "Ad Tech" (code-brackets icon) / "Transparency isn't a feature, it's oxygen. Leaders don't wait on inventory. They shape it all." / "Open API", "White-label".
+
+### 8.5 Call to action and footer (id end), min-height 100vh, padding 230u 64u 36u, column flex
+
+- **CTA panel** (glass + reveal; its own background overrides the glass tint with linear-gradient(180deg, rgba(80,58,180,.34), rgba(40,26,110,.3))): max-width 880u, centred, padding 56u 60u 50u, radius 18u, centred text, overflow hidden, with a 1 px top highlight from 15% to 85% (transparent → rgba(220,200,255,.8) → transparent). Headline weight 300, 72u, tracking −0.032em, line-height 1.02, margin-top 22u: "Start Curating" ↵ serif italic "Supply-Side" + " Now!". Lede max-width 520u, margin 20u auto 0: "Free to start. Your first curated deal can be live before your coffee goes cold." Buttons (centred, gap 10u, margin-top 32u): fill "Get Started — it's Free", ghost "Book a Call". Note line (Fira Code 12u, ink-3, tracking .02em, margin-top 22u): "No card needed  ·  Live in minutes  ·  Cancel anytime".
+- **Footer**, pushed to the bottom (margin-top auto, padding-top 150u):
+  - Link grid: 1.6fr + four 1fr columns, gap 40u, padding-bottom 40u, a hairline bottom border. Brand column: logo (21u text, 28u orb, ink); a paragraph (15u, line-height 1.5, ink-3, max-width 280u, margin-top 16u) "The independent studio for curating programmatic supply, from first brief to live deal."; a live chip "All systems normal" (margin-top 22u). Column headings in Fira Code 11u, tracking .1em, ink-3, 16u below. Links are 15u ink-2, 11u apart, white on hover (.2 s). PRODUCT: Curation, Monetization, Forecasts. USE CASES: Media Agency, Direct Advertiser, Publisher, Ad Tech. CHANNELS: CTV, Display / Native, DOOH, Video / Audio. RESOURCES: Partner Directory, Documentation, System Status, Contact Us.
+  - Legal bar: flex, space-between, padding-top 22u, 13u ink-3: "©2026 Nectarline: Supply Side Studio®" on the left; links "Privacy", "Terms", "Opt Out" (gap 24u) on the right.
+  - Wordmark: "Nectarline" at weight 300, 236u, line-height .8, tracking −0.05em, centred, margin-top 26u, with transparent text clipped to a background of linear-gradient(180deg, rgba(210,195,255,.22), rgba(210,195,255,0) 85%) (a large, fading, ghosted wordmark). aria-hidden, not selectable.
+
+### END OF SPEC EXTRACT D
+
+### SPEC EXTRACT E (verbatim from the original design spec; its section numbers are the spec's own)
+
+## 12. Small screens (max-width 820 px; u = width/390)
+
+- Nav: top 14, left 16, right 16, height 44; logo 19 px with a 28 px orb; the centre menu, "Login" and the grey "Book a Call" pill are hidden; the dark pill is 38 px tall, 13 px text, padding 0 13, radius 9.
+- Hero: min-height 100svh. The headline sits at left 20, bottom 250, 46 px with 44 px line-height; the subline at bottom 212, 16 px; buttons at bottom 140; buttons are 46 px tall, 15 px, padding 0 16, radius 10. The scroll card sits at right 20, bottom 28, 150 × 92, 18 px text, padding 12/14, with an 18 px arrow.
+- Lede 16 px. Studio: padding 150/20/80, headline 32 px, button rows wrap. Stats become 2×2 (top border on cells 3–4, no left border on cell 3, cell padding 18/14, numbers 30 px, captions 13 px, margin-top 48).
+- Dashboard: margin-top 48, radius 12, 11 px text; the breadcrumb, search and sidebar are hidden; main padding 14/12; title 17 px; "+ New deal" and the trend chip are hidden; KPIs are 2×2 (gap 8, padding 12, values 20 px, labels 11 px); the chart row stacks (gap 8); the area chart is 140 px tall; the table shows Deal, Channel and Status only (2fr 1fr 1fr, 11 px, padding 10/12).
+- Packages: padding 110/16/80; the split stacks (gap 32, margin-bottom 36); headlines 32 px; code 11 px, 200 px tall; cards stack (gap 12, min-height 330, padding 24, titles 28 px, body 15.5 px, eyebrow 30 px from the top row at 11 px, metric 26 px); steps stack (gap 14, 15 px).
+- Use cases: padding 80/16/110; the heading block returns to normal flow, left-aligned, 32 px headline, lede margin 16 above; the staircase becomes a simple stack (gap 12) with every card full width, min-height auto, padding 24, titles 27 px 34 px below the tag, body 15.5 px.
+- CTA and footer: section padding 150/16/26; panel padding 40/22/34, radius 14, headline 42 px; footer padding-top 90; the link grid is 2 columns (gap 28/20) with the brand column spanning both; links 14.5 px; the legal bar stacks (gap 10, 12 px, links wrap with gap 16); wordmark 76 px with 22 px above.
+- There is no horizontal scrolling at 390 px.
+
+### END OF SPEC EXTRACT E
+
+### SPEC EXTRACT F (verbatim from the original design spec; its section numbers are the spec's own)
+
+## 14. Acceptance checklist
+
+- At 1440×900 the hero matches: headline top 526, subline top 684, buttons top 742, scroll card at (1202, 703) sized 193×152; the koi sits centre-right with its head pointing down-right toward the large glowing lotus in the pond.
+- Moving the mouse over the hero makes circular ripples with red/blue fringing around the cursor, and the whole view (pond and koi) leans up to 1° toward the pointer, settling in about 0.3 s.
+- The pond video loops seamlessly with no visible jump, and pauses once the hero has faded out.
+- Scrolling crossfades the pond to the violet gradient, then to the night pond behind the CTA; the koi glides between the six poses and swims faster while you scroll.
+- The dashboard's lines draw in and its bars grow when it reveals; the bid request types and loops; the steps strip's highlight grows.
+- Use-case cards form a four-step diagonal with the heading in the empty top-right; their "USE CASE" tags have no fill or border; icons everywhere have no tile.
+- Cards are glass (translucent with backdrop blur); the koi reads as a soft frosted shape behind them, and there are no gradient blobs or glows anywhere in the background or around the fish.
+- 390 px wide: everything stacks as described, with no horizontal scroll.
+- No console errors; every listed URL returns 200; the three fonts load.
+
+### END OF SPEC EXTRACT F
+
+
+## 11. Reminder (highest priority)
+
+The design never changes: spec sizes, spec fonts (Fira Code for labels), spec breakpoint 820px, spec staircase construction. Text is fitted to the design, never the reverse. Charts are hand-drawn SVG with pure functions. Footer carries address, phone and social icons. All text from `src/content/`. Follow `docs/ENGINEERING.md`.
+
+
+---
+
+# PART 3 — NAVIGATION MENUS AND INNER PAGES
+
+## 0. How to read this part
+
+Everything built so far stays as it is: the home page, the scene, the hero, the footer, the tokens and the standards in `docs/ENGINEERING.md`. This part adds pages in the same visual language (glass surfaces, Inter Tight light headlines with serif-italic accents, periwinkle accent `#8d94ff`, the violet and night backdrop with the crystal koi). Reuse the existing components (`Button`/link styles, `RichText`, `StepsStrip`, `CtaPanel`, `SiteFooter`, glass surface, chips, icons, `useReveal`). Do not copy their code; import them. Work in this order: (a) plan in `docs/plan-3.md`; (b) implement; (c) check section 9 and record pass/fail in `docs/verification-3.md`.
+
+## 1. Scope
+
+1. Navigation dropdowns (desktop) and a full-screen drawer (phone layout, 820px and below).
+2. Scene behaviour on pages that have no hero.
+3. The shared page layout and a data-driven `ContentPage` template for 11 pages.
+4. Documentation page, Privacy page, Terms page (static content).
+
+Not in this part: Contact, Book a call, Get started, Login, Opt out, Customer stories, Partner directory, System status. They stay as `PageStub` until Part 4, which builds them with the database and forms.
+
+## 2. Navigation dropdowns (desktop, above 820px)
+
+- "Бүтээгдэхүүн", "Сувгууд" and "Нөөц" become `<button>` elements with `aria-haspopup="menu"` and `aria-expanded`. "Амжилтын түүх" stays a link.
+- The panel is a glass surface (the spec's glass recipe), radius 14u, padding 8u, min-width 260u, centred under its trigger, 10u below the menu bar, `z-index` 30. Rows are links: padding 10u 12u, radius 8u, 16u text, hover and focus background `rgba(255,255,255,.1)`, current page row has `aria-current="page"` and an accent-coloured text.
+- Content comes from `footer.columns`: "Бүтээгдэхүүн" shows the columns *БҮТЭЭГДЭХҮҮН* and *ХЭРЭГЛЭЭ* as two groups with small group headings (min-width 300u); "Сувгууд" shows *СУВГУУД*; "Нөөц" shows *НӨӨЦ*. Do not duplicate the strings.
+- Behaviour: opens on hover (only when `(hover: hover) and (pointer: fine)`, with a 120ms close delay so the pointer can travel into the panel), and on click, Enter, Space and ArrowDown. Only one panel is open at a time. Escape, an outside click, focus leaving the panel and every route change close it; Escape returns focus to the trigger. ArrowUp, ArrowDown, Home and End move between rows. Use a Radix primitive if one fits; otherwise a small `useDisclosure` hook. Do not add packages.
+- Under reduced motion the panel appears without transition; otherwise opacity and a 6u upward slide over .2s.
+- When the nav has the class `scrolled`, panels keep the same glass look.
+
+## 3. Mobile drawer (phone layout, 820px and below)
+
+- Add a 38×38 hamburger button (glass pill style, radius 9, `aria-label` from `nav.openMenu`, `aria-expanded`) to the right of the dark pill. The spec's hidden items (menu, "Нэвтрэх", grey pill) live in the drawer.
+- The drawer is a full-screen sheet built on the Radix dialog (shadcn `Sheet` or `Dialog`), so focus is trapped and Escape closes it. Background `rgba(13,8,40,.94)` with `backdrop-filter: blur(18px)`. Content, top to bottom: logo row with a close button (`nav.closeMenu`); the three groups with their headings and links; "Амжилтын түүх"; three full-width buttons ("Нэвтрэх", "Уулзалт товлох", "Үнэгүй эхлэх"); at the bottom the address and phone lines from `contact`.
+- Locks page scroll while open (restore on close and on unmount), closes on every route change, links are 48px tall, text 17px. Safe-area insets respected.
+
+## 4. Scene behaviour on pages without a hero
+
+The scene stays mounted above the router. `SceneLayout` receives a mode from the route: `home` or `inner`.
+
+- Keep one eased value `modeMix` (1 on home, 0 on inner) moved by `k = 1 − e^(−6·dt)` in the existing animation loop. Effective violet progress: `toVioletEff = toViolet + (1 − toViolet) * (1 − modeMix)`. Then `dayOpacity = 1 − toVioletEff`, `violetOpacity = toVioletEff * (1 − toNight)`, `nightOpacity = toNight`. This makes the hero fade out smoothly when you leave the home page and back in when you return.
+- When `dayOpacity` is 0 the pond video is paused (no decoding).
+- `toNight` uses the top of the element with id `end`. Every page ends with `<EndSection id="end">` containing `CtaPanel` and `SiteFooter`; on inner pages it has `min-height: auto` and `padding-top: 120u` (stacked 80px), not the home page's full-viewport height.
+- **Koi poses on inner pages** reuse the spec's pose values, indexed by page scroll progress `p = scrollY / maxScroll` at `p = 0, 1/3, 2/3, 1` → the spec's `dash`, `packs`, `uses`, `end` poses (desktop and phone variants), interpolated with the spec's easeInOutCubic. If `maxScroll < 0.35 × viewport height`, hold the `dash` pose. The koi eases between targets with the existing rate, so navigating between pages makes it glide.
+- On every route change: scroll to top (unless there is a `#hash`), call `measureAnchors()`, move focus to the page's `<main id="main" tabIndex={-1}>` without scrolling, and update the page meta.
+
+## 5. Shared page layout
+
+`PageShell` wraps every inner page: top padding 190u (stacked 120px), side padding 64u (phone layout: 20px), sections 90u apart (stacked 56px).
+
+`ContentPage` template (props: one entry of `contentPages`):
+
+1. **Header**: an eyebrow chip (the page's `eyebrow`; Fira Code uppercase like every other eyebrow), the title through `RichText` at `--fs-h2` weight 300, a lede (18u, max-width 640u, `ink-2`), and two buttons: fill "Үнэгүй эхлэх" → `/get-started`, ghost "Уулзалт товлох" → `/book-a-call`. Everything `reveal`.
+2. **Feature grid**: three glass cards (3 columns above 820px, stacked at 820px and below), same anatomy as the home package cards without the metric row: index "01"–"03" (Fira Code), a bare line icon from the `icon` key, title at `--fs-card-title`, body 16.5u / 1.5, `min-height` not fixed, padding 28u 30u, the same hover lift.
+3. **"How it works"**: a small Fira Code uppercase label `pageCommon.howItWorks`, then the home `StepsStrip` fed with `packs.steps` from `homeContent.js`.
+4. **Related links**: a row with the label `pageCommon.alsoSee` and text links with the arrow to the sibling pages of the same group (same first path segment), excluding the current one.
+5. `EndSection` with `CtaPanel` and `SiteFooter`.
+
+Move the line icons used on the home page (crosshair, screen, trend, briefcase, megaphone, document, code) into `src/components/icons/featureIcons.jsx` exported as an `icons` map keyed by those names, and import them from there everywhere.
+
+`ContentPage` is registered for these paths: `/product/curation`, `/product/monetization`, `/product/forecasts`, `/use-cases/media-agency`, `/use-cases/direct-advertiser`, `/use-cases/publisher`, `/use-cases/ad-tech`, `/channels/ctv`, `/channels/display-native`, `/channels/dooh`, `/channels/video-audio`. Meta description of each page = its `lede`.
+
+## 6. Documentation page (`/resources/docs`)
+
+Desktop: a 220u sticky sidebar (top 110u) listing the three articles, and a content column (max-width 760u). Stacked: the sidebar becomes a horizontally scrollable row of chips inside its own `overflow-x: auto` container (the page never scrolls sideways). Articles have ids `start`, `glossary`, `faq`; sidebar links smooth-scroll (`scroll-margin-top: 110px`) and highlight the article currently in view (IntersectionObserver).
+
+- *Эхлэх заавар*: a numbered list of 5 steps, each with a bold lead and a sentence.
+- *Нэр томьёоны тайлбар*: a definition list; term in the accent colour, definition in `ink-2`.
+- *Түгээмэл асуулт*: an accordion built on the Radix accordion (or native `<details>` if it cannot be used). The privacy question has a link to `/privacy`.
+- All text is rendered as plain text. Header, `EndSection` and footer as on other pages.
+
+## 7. Legal pages (`/privacy`, `/terms`)
+
+A narrow column (max-width 760u), the title, the line "Сүүлд шинэчилсэн: {date}" (date from content), and numbered sections (heading + paragraphs). No dropdowns, no accordion. A table of contents is not needed.
+
+## 8. Content (Mongolian). Create `src/content/pagesContent.js` exactly; do not reword
+
+```js
+export const pageCommon = {
+  howItWorks: 'ХЭРХЭН АЖИЛЛАДАГ ВЭ',
+  alsoSee: 'МӨН ҮЗЭХ',
+  lastUpdated: 'Сүүлд шинэчилсэн',
+};
+
+export const contentPages = {
+  '/product/curation': {
+    eyebrow: 'БҮТЭЭГДЭХҮҮН · СОНГОН БҮРДҮҮЛЭЛТ',
+    title: ['Нийлүүлэлтээ ', { serif: 'өөрөө' }, ' сонгон бүрдүүл'],
+    lede: 'Бэлэн багцаас эхэлж, аудитор, контекст, чанарын дүрмээр давхарлан, брифдээ яг тохирсон нийлүүлэлтийг нэг дороос бүрдүүл.',
+    features: [
+      { icon: 'crosshair', title: 'Багцаас эхэл', body: 'Аудитор, контекст, суваг тус бүрээр бэлтгэсэн багцуудаас сонгоод шууд ажиллаж эхэл.' },
+      { icon: 'document', title: 'Давхарлан тохируул', body: 'Нийтлэгчийн өөрийн өгөгдөл, найдвартай аудитор, чанарын дүрмийг нэг багцад нэгтгэ.' },
+      { icon: 'code', title: 'Нэг deal ID', body: 'Бэлэн болмогц нэг deal ID үүсгээд, хэрэглэдэг худалдан авалтын платформдоо илгээ.' },
+    ],
+  },
+  '/product/monetization': {
+    eyebrow: 'БҮТЭЭГДЭХҮҮН · МӨНГӨЖҮҮЛЭЛТ',
+    title: ['Нөөцийнхөө ', { serif: 'үнэ цэнийг' }, ' өсгө'],
+    lede: 'Өөрийн нөөцийг сонгомол багц болгон санал болгож, завсрын алхмыг багасгаад бодит үнэд ойртуул.',
+    features: [
+      { icon: 'screen', title: 'Өөрийн нөөцийн багц', body: 'Нөөцөө контекст, аудитор, форматаар нь багцалж худалдан авагчдад шууд санал болго.' },
+      { icon: 'trend', title: 'Завсрын алхам цөөн', body: 'Нийлүүлэлтийн гинжин хэлхээний шат дамжлагыг багасгаж, ил тод байдлыг нэмэгдүүл.' },
+      { icon: 'crosshair', title: 'Доод үнийн хяналт', body: 'Deal бүрийн доод үнийг өөрөө тогтоож, хүссэн үедээ өөрчил.' },
+    ],
+  },
+  '/product/forecasts': {
+    eyebrow: 'БҮТЭЭГДЭХҮҮН · ТААМАГЛАЛ',
+    title: ['Эхлэхээсээ өмнө ', { serif: 'урьдчилан' }, ' хар'],
+    lede: 'Хүрээ, доод үнэ, үнийн саналын зөвлөмжийг deal идэвхжихээс өмнө нэг дороос хар.',
+    features: [
+      { icon: 'trend', title: 'Хүрээний таамаглал', body: 'Сонгосон дүрэмд нийцэх нөөцийн хэмжээг урьдчилан тооцно.' },
+      { icon: 'crosshair', title: 'Доод үнийн зөвлөмж', body: 'Хожилтын хувь ба үнийн хоорондын тэнцвэрийг харуулна.' },
+      { icon: 'screen', title: 'Хурдан тохируулга', body: 'Дүрмээ өөрчлөхөд таамаглал шууд шинэчлэгдэнэ.' },
+    ],
+  },
+  '/use-cases/media-agency': {
+    eyebrow: 'ХЭРЭГЛЭЭ · МЕДИА АГЕНТЛАГ',
+    title: ['Олон үйлчлүүлэгч, нэг ', { serif: 'тайван' }, ' ажлын орчин'],
+    lede: 'Үйлчлүүлэгч бүрийн нийлүүлэлтийг тусад нь сонгон бүрдүүлж, маржаа өөрөө хяна.',
+    features: [
+      { icon: 'briefcase', title: 'Олон үйлчлүүлэгчийн эрх', body: 'Үйлчлүүлэгч бүрт тусдаа орчин, эрхийн тохиргоо үүсгэнэ.' },
+      { icon: 'trend', title: 'Маржийн хяналт', body: 'Deal бүр дээрх өөрийн маржийг ил харж, шийдвэрээ өөрөө гаргана.' },
+      { icon: 'screen', title: 'Нэг ажлын орчин', body: 'Бүх үйлчлүүлэгчийн багц, таамаглал, deal нэг дороо байна.' },
+    ],
+  },
+  '/use-cases/direct-advertiser': {
+    eyebrow: 'ХЭРЭГЛЭЭ · ШУУД СУРТАЛЧЛАГЧ',
+    title: ['Хэрэггүйг хас, ', { serif: 'чухлыг' }, ' үлдээ'],
+    lede: 'Нийлүүлэлтийг хутгахын оронд хэлбэржүүлж, брэндийнхээ зорилгод нийцэх байршлыг л сонго.',
+    features: [
+      { icon: 'megaphone', title: 'Брэндийн аюулгүй байдал', body: 'Брэндэд тохирохгүй контекстийг дүрмээр нь хасна.' },
+      { icon: 'crosshair', title: 'Үр дүнгийн KPI', body: 'Чухалчилдаг үзүүлэлт рүүгээ чиглэсэн байршлуудыг сонгоно.' },
+      { icon: 'document', title: 'Ил тод нийлүүлэлт', body: 'Таны мөнгө хаана очиж байгааг урьдчилан харна.' },
+    ],
+  },
+  '/use-cases/publisher': {
+    eyebrow: 'ХЭРЭГЛЭЭ · НИЙТЛЭГЧ',
+    title: ['Маржаа ', { serif: 'өөртөө' }, ' үлдээ'],
+    lede: 'Завсрын алхам бүр хувь авдаг. Тэдгээрийг хасаж, нөөцөө өөрөө багцалж санал болго.',
+    features: [
+      { icon: 'document', title: 'Өөрийн нөөцийн багц', body: 'Өөрийн нөөцийг контекст, форматаар нь багцалж худалдан авагчдад нээ.' },
+      { icon: 'trend', title: 'Аудиторийн өргөтгөл', body: 'Өөрийн өгөгдлөө найдвартай аудиторитай хослуулан хүрээгээ тэлнэ.' },
+      { icon: 'screen', title: 'Завсрын алхмыг хасна', body: 'Нийлүүлэлтийн замыг богиносгож, орлогын нэг хэсэг завсрын шатанд алдагдахаас сэргийл.' },
+    ],
+  },
+  '/use-cases/ad-tech': {
+    eyebrow: 'ХЭРЭГЛЭЭ · AD TECH',
+    title: ['Ил тод байдал бол ', { serif: 'хүчилтөрөгч' }],
+    lede: 'Нээлттэй, өөрийн брэндээр ажиллах боломжтой нийлүүлэлтийн студийг платформдоо нэгтгэ.',
+    features: [
+      { icon: 'code', title: 'Нээлттэй API', body: 'Өөрийн системтэйгээ холбож, нийлүүлэлтийн урсгалыг хянаж ажиллуул.' },
+      { icon: 'briefcase', title: 'White-label', body: 'Студийг өөрийн брэнд, өөрийн хэрэглэгчдэд зориулан ажиллуул.' },
+      { icon: 'document', title: 'Ил тод байдал', body: 'Нийлүүлэлтийн замын алхам бүрийг ил харагдахуйц болго.' },
+    ],
+  },
+  '/channels/ctv': {
+    eyebrow: 'СУВГУУД · CTV',
+    title: ['Үзэж буй ', { serif: 'дэлгэцүүд' }, ' дээр'],
+    lede: 'Стриминг нөөцийг контекст, жанраар нь тохируулан, том дэлгэцийн үзэгчдэд хүр.',
+    features: [
+      { icon: 'screen', title: 'Контекст, жанрын сонголт', body: 'Нөөцийг агуулгын жанр, контекстоор нь шүүж багцал.' },
+      { icon: 'trend', title: 'Үзэж дуусгах хувь', body: 'Үзэж дуусгах хувийг гол үзүүлэлт болгон хянана.' },
+      { icon: 'code', title: 'Нэг deal ID', body: 'CTV багцаа нэг deal ID-гаар худалдан авалтын платформдоо холбо.' },
+    ],
+  },
+  '/channels/display-native': {
+    eyebrow: 'СУВГУУД · DISPLAY / NATIVE',
+    title: ['Зөв ', { serif: 'контекстод' }, ' харагд'],
+    lede: 'Домэйн оноо, контекстийн дүрмээр чанартай байршлыг сонгон, дэлгэцийн сурталчилгаагаа цэгцэл.',
+    features: [
+      { icon: 'document', title: 'Контекстийн дүрэм', body: 'Агуулгын сэдвээр нь байршлыг сонгож, шүүнэ.' },
+      { icon: 'crosshair', title: 'Домэйн оноо', body: 'Домэйныг чанарын шалгуураар үнэлж, сул байршлыг хасна.' },
+      { icon: 'screen', title: 'Форматын сонголт', body: 'Display болон Native форматыг нэг багцад хослуулна.' },
+    ],
+  },
+  '/channels/dooh': {
+    eyebrow: 'СУВГУУД · DOOH',
+    title: ['Гадаа орчны ', { serif: 'дэлгэцүүдийг' }, ' програматикаар'],
+    lede: 'Гадаа болон олон нийтийн дэлгэцийн нөөцийг бусад сувагтайгаа нэг дүрмээр удирд.',
+    features: [
+      { icon: 'crosshair', title: 'Байршлын сонголт', body: 'Сурталчилгаагаа тавих байршлын төрлийг дүрмээр тодорхойлно.' },
+      { icon: 'trend', title: 'Цагийн хуваарь', body: 'Өдрийн аль цагт харагдахыг тохируулна.' },
+      { icon: 'screen', title: 'Нэг ажлын орчин', body: 'DOOH-ыг бусад сувагтай хамт нэг самбараас харна.' },
+    ],
+  },
+  '/channels/video-audio': {
+    eyebrow: 'СУВГУУД · БИЧЛЭГ / АУДИО',
+    title: ['Дуу, дүрсээр ', { serif: 'сонсогдож' }, ' харагд'],
+    lede: 'Онлайн бичлэг болон аудио нөөцийг контекст, аудиторийн дүрмээр сонгон бүрдүүл.',
+    features: [
+      { icon: 'screen', title: 'Онлайн бичлэг', body: 'Бичлэгийн нөөцийг чанар, контекстоор нь сонгоно.' },
+      { icon: 'megaphone', title: 'Аудио', body: 'Аудио нөөцийг цаг, аудиторийн дүрмээр багцална.' },
+      { icon: 'code', title: 'Нэг deal-д хослуулах', body: 'Бичлэг ба аудиог нэг багцад нэгтгэж, нэг deal ID-гаар ажиллуул.' },
+    ],
+  },
+};
+
+export const docsContent = {
+  title: ['Баримт ', { serif: 'бичиг' }],
+  lede: 'Эхлэх заавар, нэр томьёоны тайлбар, түгээмэл асуултууд.',
+  nav: [
+    { id: 'start', label: 'Эхлэх заавар' },
+    { id: 'glossary', label: 'Нэр томьёо' },
+    { id: 'faq', label: 'Түгээмэл асуулт' },
+  ],
+  start: {
+    heading: 'Эхлэх заавар',
+    steps: [
+      { lead: 'Бүртгүүл.', text: 'Үнэгүй эхлэх хуудсаар бүртгэлээ үүсгэнэ.' },
+      { lead: 'Багцаа сонго.', text: 'Брифдээ ойр аудитор, контекст эсвэл сувгийн багцыг нээнэ.' },
+      { lead: 'Дүрмээ тохируул.', text: 'Аудитор, контекст, чанарын шалгуур, доод үнийг нэмж тохируулна.' },
+      { lead: 'Таамаглалаа хар.', text: 'Хүрээ, доод үнэ, үнийн саналын зөвлөмжийг урьдчилан шалгана.' },
+      { lead: 'Deal ID үүсгэ.', text: 'Үүссэн deal ID-г худалдан авалтын платформдоо оруулж идэвхжүүлнэ.' },
+    ],
+  },
+  glossary: {
+    heading: 'Нэр томьёоны тайлбар',
+    items: [
+      { term: 'Програматик', definition: 'Сурталчилгааны нөөцийг автоматжуулсан системээр худалдаж авах арга.' },
+      { term: 'Deal ID', definition: 'Худалдан авагч ба нийтлэгчийн урьдчилан тохиролцсон нөхцөлийг платформ дээр таних код.' },
+      { term: 'Доод үнэ', definition: 'Нөөцийг худалдахад зөвшөөрөх хамгийн бага үнэ (floor price).' },
+      { term: 'Хожилтын хувь', definition: 'Тавьсан үнийн саналын хэдэн хувь нь хожиж, сурталчилгаа харагдсаныг харуулна (win rate).' },
+      { term: 'eCPM', definition: 'Мянган үзүүлэлт тутмын үр дүнтэй өртөг (effective cost per mille).' },
+      { term: 'Хувийн дуудлага худалдаа', definition: 'Зөвхөн урьсан худалдан авагчид оролцдог дуудлага худалдаа (private auction).' },
+      { term: 'OpenRTB', definition: 'Програматик худалдаанд үнийн санал хүсэх, хариулах нээлттэй стандарт.' },
+      { term: 'CTV', definition: 'Интернетэд холбогдсон телевизор дээрх стриминг сурталчилгаа.' },
+      { term: 'DOOH', definition: 'Гадаа орчны дижитал дэлгэц дээрх сурталчилгаа (digital out-of-home).' },
+    ],
+  },
+  faq: {
+    heading: 'Түгээмэл асуулт',
+    items: [
+      { q: 'Хэрхэн эхлэх вэ?', a: 'Бүртгүүлж, багцаа сонгоод, дүрмээ тохируулаад deal ID үүсгэнэ. Дэлгэрэнгүйг "Эхлэх заавар"-аас үзнэ үү.' },
+      { q: 'Аль платформ дээр ажиллах вэ?', a: 'Deal ID-г дэмждэг худалдан авалтын платформ дээр ашиглана. Танай платформыг дэмжих эсэхийг бидэнтэй холбогдож лавлана уу.' },
+      { q: 'Уулзалтыг хэрхэн товлох вэ?', a: '"Уулзалт товлох" хуудсаар хүсэлтээ илгээвэл бид тантай холбогдоно.' },
+      { q: 'Миний мэдээлэл хэрхэн хамгаалагдах вэ?', a: 'Дэлгэрэнгүйг нууцлалын бодлогоос үзнэ үү.', link: { label: 'Нууцлалын бодлого', to: '/privacy' } },
+    ],
+  },
+};
+
+export const legalContent = {
+  '/privacy': {
+    title: 'Нууцлалын бодлого',
+    updated: '2026.11.21',
+    sections: [
+      { heading: 'Бидний цуглуулдаг мэдээлэл', paragraphs: [
+        'Та хүсэлт, холбоо барих форм эсвэл бүртгэлээр дамжуулан нэр, имэйл, утас, компанийн нэр болон өөрийн бичсэн мессежийг өгдөг.',
+        'Сайтын ажиллагааг хангахад шаардлагатай техникийн мэдээлэл (хөтөч, төхөөрөмжийн төрөл гэх мэт) автоматаар бүртгэгдэж болно.',
+      ] },
+      { heading: 'Мэдээллийг ашиглах зорилго', paragraphs: [
+        'Хүсэлтэд хариу өгөх, уулзалт товлох, бүртгэлийг удирдах, үйлчилгээгээ сайжруулах зорилгоор ашиглана.',
+        'Таны мэдээллийг маркетингийн зорилгоор гуравдагч этгээдэд худалдахгүй.',
+      ] },
+      { heading: 'Хадгалалт ба хамгаалалт', paragraphs: [
+        'Мэдээллийг шаардлагатай хугацаанд хадгалж, зөвшөөрөлгүй хандахаас хамгаалах техникийн болон зохион байгуулалтын арга хэмжээ авна.',
+      ] },
+      { heading: 'Таны эрх', paragraphs: [
+        'Та өөрийн мэдээллийг харах, засуулах, устгуулах хүсэлтийг бидэнд илгээж болно.',
+        'Мөн "Татгалзах" хуудсаар мэдээллээ боловсруулахаас татгалзаж болно.',
+      ] },
+      { heading: 'Холбоо барих', paragraphs: [
+        'Асуулт байвал "Холбоо барих" хуудсаар бидэнтэй холбогдоно уу.',
+      ] },
+    ],
+  },
+  '/terms': {
+    title: 'Үйлчилгээний нөхцөл',
+    updated: '2026.11.21',
+    sections: [
+      { heading: 'Үйлчилгээний хүрээ', paragraphs: [
+        'Энэ сайт нь студийн үйлчилгээний тухай мэдээлэл өгч, хүсэлт хүлээн авдаг.',
+      ] },
+      { heading: 'Хэрэглэгчийн үүрэг', paragraphs: [
+        'Та үнэн зөв мэдээлэл өгч, сайтыг хууль бус зорилгоор ашиглахгүй байх үүрэгтэй.',
+      ] },
+      { heading: 'Оюуны өмч', paragraphs: [
+        'Сайтын агуулга, нэр, лого нь тус тусын эзэмшигчийн оюуны өмч бөгөөд эрхийн эзэмшигчийн зөвшөөрөлгүйгээр ашиглахыг хориглоно.',
+      ] },
+      { heading: 'Хариуцлагын хязгаарлалт', paragraphs: [
+        'Сайтын мэдээллийг үнэн зөв байлгахыг хичээх боловч алдаа, түр саатлаас үүдэх хохиролд хууль зөвшөөрсөн хэмжээнд хариуцлага хүлээхгүй.',
+      ] },
+      { heading: 'Өөрчлөлт', paragraphs: [
+        'Нөхцөлийг шинэчилж болох бөгөөд өөрчлөлт сайт дээр нийтлэгдсэнээс хойш хүчинтэй болно.',
+      ] },
+      { heading: 'Холбоо барих', paragraphs: [
+        'Асуулт байвал "Холбоо барих" хуудсаар бидэнтэй холбогдоно уу.',
+      ] },
+    ],
+  },
+};
+```
+
+Page titles come from `pageTitles` in `siteContent.js` (Part 1); `docsContent` and `legalContent` set their own page titles through `usePageMeta`.
+
+## 9. Acceptance criteria (record results in `docs/verification-3.md`)
+
+1. The 11 template pages, the documentation page, Privacy and Terms render real content with correct browser titles. The other routes from Part 1 are still stubs.
+2. Desktop dropdowns open by hover, click and keyboard; only one is open; Escape closes and returns focus; navigating closes them; the panel never leaves the viewport at 821px.
+3. The stacked drawer opens and closes, traps focus, locks page scroll, closes on navigation, and lists every route group plus the contact lines.
+4. Scene: leaving the home page fades the pond to violet smoothly, returning fades it back; the night layer appears behind the footer on every page; the koi glides to new poses on navigation; the video is paused while the day plate is invisible.
+5. After 10 navigations between home and inner pages there are still exactly two `<canvas>` elements, no console errors or warnings, and no scroll jump.
+6. No horizontal overflow at 360, 390, 768, 820, 821, 1100, 1440 and 1920px on any new page, including the docs page with its chip row. Long Mongolian words wrap inside cards and never cut.
+7. Related links show the correct siblings and never the current page.
+8. After each route change the page's main region has focus and the skip link works.
+9. The documentation sidebar highlights the article in view; the accordion opens and closes with mouse and keyboard.
+10. The footer with address, phone and social icons appears on every new page.
+
+## 10. Reminder (highest priority)
+
+Reuse components, do not copy them. Same glass and violet look as the home page. Dropdown and drawer use the Radix/shadcn primitives only. The scene is mounted once; modes are eased, not switched. Mongolian text wraps, never truncates. Text comes only from `src/content/`. Follow `docs/ENGINEERING.md`.
+
+
+---
+
+# PART 4 — BACKEND, FORMS, AUTH, DATA PAGES
+
+## 0. How to read this part
+
+Everything built so far stays unchanged except where this part says so. Follow `docs/ENGINEERING.md`, especially "Failure handling" and "Security". The question to ask about every piece of code here is not "does it work" but "what breaks, and who can abuse it". Work in this order: (a) plan in `docs/plan-4.md`; (b) write `docs/DATA.md` (entities, access rules, functions) and `docs/SECURITY.md` (threats considered and how each is handled, one line each); (c) implement; (d) check section 9 and record pass/fail in `docs/verification-4.md`. If the platform cannot do something this part requires (for example anonymous function calls), say so in `docs/verification-4.md`; never weaken a security rule to make something work.
+
+## 1. Scope
+
+Eight pages become real: `/contact`, `/book-a-call`, `/get-started`, `/opt-out`, `/login`, `/stories`, `/resources/partners`, `/resources/status`. Plus: the entities, backend functions, a form layer, an auth hook, a live status chip in the footer, and a logged-in state in the navigation.
+
+## 2. Data model (platform-managed database)
+
+Use the platform's managed database and entities. One entity per concept. Field names are snake_case. Do not store things you filter or sort on inside nested objects. Filter only on `request_id`, `email`, `created_date`, `is_published`, `category` and `state`. Do not seed any records.
+
+| Entity | Fields (* = required) |
+|---|---|
+| `CallRequest` | `full_name`*, `email`*, `phone`, `company`*, `preferred_time` (morning / afternoon / evening), `message`, `consent_given` (bool)*, `consent_at` (datetime)*, `status` (new / contacted / closed, default new), `request_id`*, `source_path` |
+| `AccessRequest` | `full_name`*, `email`*, `company`*, `interest`* (curation / monetization / forecasts / other), `message`, `consent_given`*, `consent_at`*, `status`, `request_id`*, `source_path` |
+| `ContactMessage` | `full_name`*, `email`*, `topic`* (general / partnership / support), `message`*, `consent_given`*, `consent_at`*, `status`, `request_id`*, `source_path` |
+| `OptOutRequest` | `email`*, `scope`* (marketing_email / data_processing / both), `status` (new / processed, default new), `request_id`*, `source_path` |
+| `Partner` | `name`*, `category`* (agency / publisher / platform / data), `description`*, `website_url`, `sort_order` (number), `is_published` (bool, default false) |
+| `CustomerStory` | `customer_name`*, `industry`, `headline`*, `summary`*, `sort_order`, `is_published` (default false) |
+| `ServiceStatus` | `component_name`*, `state`* (operational / degraded / outage), `sort_order` |
+| `StatusIncident` | `title`*, `details`, `state`* (investigating / resolved), `started_at`*, `resolved_at`, `is_published` (default false) |
+
+## 3. Access rules (fail closed)
+
+- **All eight entities: create, read, update and delete are allowed for the admin role only.** The browser never touches an entity directly. Use the platform's entity security rules; if its rule syntax differs from what you expect, use the syntax it supports, and keep the effect identical.
+- **Public visitors can only do two things**: submit a form through the `submitForm` function (write-only), and read public content through three read-only functions that return whitelisted fields of published rows. There is no function that returns a record by id and none that returns a submission.
+- No service key, token or secret appears in client code, in the repo or in logs. Backend functions create their privileged client from the incoming request, the way the platform documents.
+- If an access check or a rate-limit query fails for any reason, the function answers with a generic failure and stores nothing.
+
+## 4. Backend functions (serverless, in `functions/`)
+
+Use the platform's current conventions for function files. Add no packages on the server: validate with small plain functions, no schema library there.
+
+### 4.1 `submitForm`
+
+Request body (JSON, at most 10 KB, otherwise reject): `{ kind, request_id, website, data }`.
+
+1. `kind` must be one of `call_request`, `access_request`, `contact_message`, `opt_out`. Anything else → reject.
+2. `request_id` must be a UUID-shaped string. `website` is the honeypot: if it is a non-empty string, answer with the normal success response and store nothing.
+3. Validate `data` against the allowed fields of that kind (strict: unknown fields are rejected). Trim every string and reject control characters. Limits: `full_name` 100, `email` 254 and a valid address, `phone` 6–20 characters from digits, spaces, `+ - ( )`, `company` 120, `message` 2000 (required only for `contact_message`), enums exactly as in section 2, `consent_given` must be `true` for all kinds except `opt_out`.
+4. Idempotency: if a record with the same `request_id` already exists for that entity, answer success without creating another.
+5. Rate limit: count records of that entity with the same lower-cased email created in the last 10 minutes; 3 or more → answer `rate_limited`. Also count all records of that entity in the last hour; 200 or more → answer `unavailable`. If either count cannot be computed → answer `unavailable` and store nothing.
+6. Create the record with the privileged client: lower-case the email, set `status` to its default, `consent_at` to now, `source_path` to the validated pathname (max 100 characters, must start with `/`).
+7. Optional notification: if a secret `NOTIFY_EMAIL` exists, send the owner a plain-text email (no HTML) with the kind and the fields. A failed email must not fail the request; it is only logged.
+8. Response: `{ ok: true }` or `{ ok: false, code }` where `code` is `invalid`, `rate_limited` or `unavailable`. Never include internal error text. In logs write only the kind and the code, never names, emails or message text.
+
+### 4.2 Read-only public functions
+
+- `getPartners`: published partners only, fields `id`, `name`, `category`, `description`, `website_url`; ordered by `sort_order`; at most 100.
+- `getStories`: published stories only, fields `id`, `customer_name`, `industry`, `headline`, `summary`; ordered by `sort_order`; at most 50.
+- `getServiceStatus`: `{ components: [{ id, component_name, state }], incidents: [{ id, title, details, state, started_at, resolved_at }] }`; components ordered by `sort_order`; incidents published only, started in the last 90 days, newest first, at most 20.
+
+Each returns only the fields listed. If the platform requires the visitor to be signed in to call functions, record it in `docs/verification-4.md` and keep the functions as they are.
+
+## 5. Client layer
+
+- `src/api/invokeFunction.js`: one wrapper around the SDK's function call with a 10-second timeout. Reads retry once on failure; writes retry once only because `request_id` makes them safe. It returns normal data or throws an `ApiError` with a `code` (`timeout`, `network`, `invalid`, `rate_limited`, `unavailable`).
+- `src/api/forms.js`, `src/api/publicContent.js`: thin functions on top of the wrapper.
+- Hooks with TanStack Query: `usePartners`, `useStories` (`staleTime` 5 minutes), `useServiceStatus` (`staleTime` 60 seconds), each with `retry: 1`.
+- `src/hooks/useAuth.js`: `useQuery` on the SDK's current-user call with `retry: false`; exposes `user`, `isAuthenticated`, `isLoading`, `logout`. While loading or on error, treat the visitor as signed out.
+- `src/lib/formLimits.js`: the numeric limits from section 4.1, used by the client schemas. They must match the server.
+- `src/components/forms/`: `FormShell` (glass card, status region with `aria-live="polite"`), `TextField`, `TextAreaField`, `SelectField`, `ConsentField`, `HoneypotField`. Build them on the shadcn components (the Radix versions in `src/components/ui`: Form, Input, Textarea, Select, Checkbox, Label, Button, Tabs; create any that are missing by hand in the standard Radix pattern), restyled as below. Do not add Base UI.
+
+## 6. Form behaviour (all four forms)
+
+- react-hook-form + zod on the client (same limits and rules as the server). Validate on blur and on submit; show the error under the field; move focus to the first invalid field on a failed submit.
+- A `request_id` (UUID from `crypto.randomUUID()`) is created once when the form mounts and renewed only after a successful submit.
+- States: idle, submitting (button disabled and shows the label with "…"; a second click does nothing), success (the form is replaced by a success panel with a button to send another), error (inline message above the button; the fields keep their values).
+- The honeypot is a text input named `website`, off-screen (not `display:none`), `tabIndex={-1}`, `autoComplete="off"`, `aria-hidden="true"`.
+- A timeout shows the `timeout` message and the user can press send again safely.
+- `/contact` reads `?topic=` and preselects the topic only if it is one of the three allowed values.
+- Field styling: 48u tall (stacked 48px), radius 10u, background `rgba(170,150,255,.07)`, border `rgba(190,170,255,.14)`, text `ink`, placeholder `ink-3`, focus ring 2px `#8d94ff`; labels 13u `ink-2` above the field; errors 13u `#ff9db0`. Form card: glass surface, max-width 560u, padding 36u (stacked 22px). Next to it (stacked: below it) an info card with the address, the phone and the social icons.
+
+## 7. Pages
+
+All pages use `PageShell` and `EndSection` with `SiteFooter`. On the four form pages `CtaPanel` is not shown (the form is the call to action): add a `showCta` prop to `EndSection` (default true) and pass `false` there.
+
+- **`/book-a-call`**: header (eyebrow, title, lede) + `call_request` form: full name, email, phone (optional), company, preferred time (select), message (optional), consent.
+- **`/get-started`**: header + `access_request` form: full name, email, company, interest (select), message (optional), consent; under it the line `getStarted.haveAccount` with a link to `/login`.
+- **`/contact`**: header + `contact_message` form: full name, email, topic (select), message, consent. The info card is prominent here.
+- **`/opt-out`**: header + `opt_out` form: email, scope (select). No consent field.
+- **`/login`**: two tabs, "Нэвтрэх" and "Бүртгүүлэх". Use the platform SDK's current email/password login, registration and one-time-code verification methods and the Google provider login; read the exact method signatures from the installed SDK instead of guessing them. Registration: name, email, password, repeat password (min 8 characters), then a verification step asking for the code sent by email, then sign in. After a successful sign-in go to `/`. Failure messages are generic (never reveal whether an email exists). No `next` redirect parameter. No tokens are stored or logged by app code.
+- **Navigation logged-in state**: when `isAuthenticated`, replace "Нэвтрэх" (desktop) and its drawer entry with a 38u round avatar button showing the user's initials (`aria-label` = `nav.account`) that opens a one-item menu "Гарах" calling `logout` and returning to `/`.
+- **`/stories`**: header + a grid of glass cards (3 columns desktop, 1 stacked): industry chip, headline, summary, customer name. States: loading (3 skeleton cards), error (message + "Дахин оролдох" button), empty (message + two buttons "Уулзалт товлох", "Үнэгүй эхлэх"). All text rendered as plain text.
+- **`/resources/partners`**: header + category filter chips (client-side filter, "Бүгд" first) + a grid of glass cards: name, category chip, description, a "Вэбсайт" link shown only when `website_url` starts with `https://`, opening in a new tab with `rel="noopener noreferrer"`. Same three states; the empty state has a button "Түнш болох" → `/contact?topic=partnership`.
+- **`/resources/status`**: header + a summary pill (all components operational → `status.allOk` in the accent-green live style; otherwise `status.degraded` in amber) + a list of components with a state dot (operational `#5ee6a8`, degraded `#ffc27a`, outage `#ff8f9d`) and a label; then the incidents list (title, state chip, date `YYYY.MM.DD`, details) or `status.noIncidents`. No components → `status.noData`, and no summary pill.
+- **Footer status chip** (Part 2): now driven by `useServiceStatus`. While loading, on error, or with no components: render nothing. Otherwise show `footer.systemStatus` (all operational) or `footer.systemStatusDegraded` (anything else). It still links to `/resources/status`.
+
+## 8. Content (Mongolian). Create `src/content/formsContent.js` exactly; do not reword
+
+```js
+export const formCommon = {
+  submit: 'Илгээх',
+  submitting: 'Илгээж байна…',
+  sendAnother: 'Дахин илгээх',
+  optional: '(заавал биш)',
+  retry: 'Дахин оролдох',
+  consentLabel: 'Нууцлалын бодлоготой танилцаж, зөвшөөрч байна.',
+  consentLink: 'Нууцлалын бодлого',
+  labels: {
+    full_name: 'Бүтэн нэр',
+    email: 'Имэйл',
+    phone: 'Утас',
+    company: 'Компани',
+    message: 'Мессеж',
+    preferred_time: 'Тохиромжтой цаг',
+    topic: 'Сэдэв',
+    interest: 'Сонирхож буй зүйл',
+    scope: 'Татгалзах зүйл',
+  },
+  errors: {
+    required: 'Энэ талбарыг бөглөнө үү',
+    email: 'Имэйл хаяг буруу байна',
+    phone: 'Утасны дугаар буруу байна',
+    tooLong: 'Хэт урт байна (дээд тал нь {max} тэмдэгт)',
+    consent: 'Үргэлжлүүлэхийн тулд зөвшөөрөл өгнө үү',
+    invalid: 'Мэдээлэл буруу байна. Шалгаад дахин оролдоно уу.',
+    rate_limited: 'Хэт олон удаа оролдлоо. Түр хүлээгээд дахин оролдоно уу.',
+    unavailable: 'Одоогоор илгээх боломжгүй байна. Түр хүлээгээд дахин оролдоно уу.',
+    timeout: 'Хүсэлт илгээгдсэн эсэх тодорхойгүй байна. Дахин илгээхэд давхардахгүй.',
+    network: 'Сүлжээнд холбогдож чадсангүй. Холболтоо шалгаад дахин оролдоно уу.',
+  },
+};
+
+export const bookCall = {
+  eyebrow: 'УУЛЗАЛТ ТОВЛОХ',
+  title: ['Бидэнтэй ', { serif: 'уулзъя' }],
+  lede: 'Мэдээллээ үлдээвэл бид тантай холбогдож, тохиромжтой цагийг тохиролцоно.',
+  timeOptions: [
+    { value: 'morning', label: 'Өглөө' },
+    { value: 'afternoon', label: 'Өдөр' },
+    { value: 'evening', label: 'Орой' },
+  ],
+  successTitle: 'Хүсэлтийг хүлээн авлаа',
+  successText: 'Бид тантай удахгүй холбогдоно.',
+};
+
+export const getStarted = {
+  eyebrow: 'ҮНЭГҮЙ ЭХЛЭХ',
+  title: ['Нийлүүлэлтээ ', { serif: 'сонгон бүрдүүлж' }, ' эхэл'],
+  lede: 'Мэдээллээ үлдээвэл бид тантай холбогдож, эхлэх алхмуудыг тайлбарлана.',
+  interestOptions: [
+    { value: 'curation', label: 'Сонгон бүрдүүлэлт' },
+    { value: 'monetization', label: 'Мөнгөжүүлэлт' },
+    { value: 'forecasts', label: 'Таамаглал' },
+    { value: 'other', label: 'Бусад' },
+  ],
+  haveAccount: 'Бүртгэлтэй юу?',
+  haveAccountLink: 'Нэвтрэх',
+  successTitle: 'Хүсэлтийг хүлээн авлаа',
+  successText: 'Бид тантай удахгүй холбогдоно.',
+};
+
+export const contactPage = {
+  eyebrow: 'ХОЛБОО БАРИХ',
+  title: ['Бидэнтэй ', { serif: 'холбогд' }],
+  lede: 'Асуулт, санал, хамтын ажиллагааны хүсэлтээ бичээрэй.',
+  topicOptions: [
+    { value: 'general', label: 'Ерөнхий асуулт' },
+    { value: 'partnership', label: 'Хамтын ажиллагаа' },
+    { value: 'support', label: 'Тусламж' },
+  ],
+  infoHeading: 'ХОЛБОО БАРИХ МЭДЭЭЛЭЛ',
+  successTitle: 'Мессежийг хүлээн авлаа',
+  successText: 'Бид тантай удахгүй холбогдоно.',
+};
+
+export const optOut = {
+  eyebrow: 'ТАТГАЛЗАХ',
+  title: ['Мэдээллээ ', { serif: 'хянах' }],
+  lede: 'Имэйлээр мэдээлэл хүлээн авах эсвэл мэдээллээ боловсруулахаас татгалзах хүсэлтээ илгээнэ үү.',
+  scopeOptions: [
+    { value: 'marketing_email', label: 'Маркетингийн имэйлээс татгалзах' },
+    { value: 'data_processing', label: 'Мэдээллийг боловсруулахаас татгалзах' },
+    { value: 'both', label: 'Хоёуланг' },
+  ],
+  successTitle: 'Хүсэлтийг хүлээн авлаа',
+  successText: 'Таны хүсэлтийг боловсруулахад хэсэг хугацаа шаардагдана.',
+};
+
+export const loginPage = {
+  eyebrow: 'НЭВТРЭХ',
+  title: ['Тавтай ', { serif: 'морил' }],
+  tabs: { login: 'Нэвтрэх', register: 'Бүртгүүлэх' },
+  labels: {
+    full_name: 'Бүтэн нэр',
+    email: 'Имэйл',
+    password: 'Нууц үг',
+    passwordRepeat: 'Нууц үг давтах',
+    code: 'Баталгаажуулах код',
+  },
+  submitLogin: 'Нэвтрэх',
+  submitRegister: 'Бүртгүүлэх',
+  submitCode: 'Баталгаажуулах',
+  google: 'Google-ээр нэвтрэх',
+  or: 'эсвэл',
+  codeHint: 'Имэйлээр ирсэн кодыг оруулна уу.',
+  errors: {
+    credentials: 'Имэйл эсвэл нууц үг буруу байна',
+    passwordShort: 'Нууц үг дор хаяж 8 тэмдэгт байх ёстой',
+    passwordMismatch: 'Нууц үг таарахгүй байна',
+    code: 'Код буруу эсвэл хугацаа дууссан',
+    generic: 'Алдаа гарлаа. Түр хүлээгээд дахин оролдоно уу.',
+  },
+};
+
+export const storiesPage = {
+  eyebrow: 'АМЖИЛТЫН ТҮҮХ',
+  title: ['Бидэнтэй ', { serif: 'ажилласан' }, ' хүмүүс'],
+  lede: 'Үйлчлүүлэгчдийн бодит үр дүн.',
+  empty: 'Амжилтын түүхүүд удахгүй нэмэгдэнэ.',
+  error: 'Мэдээллийг ачаалж чадсангүй.',
+};
+
+export const partnersPage = {
+  eyebrow: 'ТҮНШҮҮД',
+  title: ['Түншүүдийн ', { serif: 'жагсаалт' }],
+  lede: 'Бидэнтэй хамтран ажилладаг түншүүд.',
+  categories: [
+    { value: 'all', label: 'Бүгд' },
+    { value: 'agency', label: 'Агентлаг' },
+    { value: 'publisher', label: 'Нийтлэгч' },
+    { value: 'platform', label: 'Платформ' },
+    { value: 'data', label: 'Өгөгдөл' },
+  ],
+  visit: 'Вэбсайт',
+  empty: 'Түншүүдийн жагсаалт удахгүй нэмэгдэнэ.',
+  becomePartner: 'Түнш болох',
+  error: 'Мэдээллийг ачаалж чадсангүй.',
+};
+
+export const statusPage = {
+  eyebrow: 'СИСТЕМИЙН ТӨЛӨВ',
+  title: ['Системийн ', { serif: 'төлөв' }],
+  lede: 'Үйлчилгээний одоогийн байдал ба саяхны тохиолдлууд.',
+  states: { operational: 'Хэвийн', degraded: 'Саатсан', outage: 'Доголдсон' },
+  allOk: 'Бүх систем хэвийн',
+  degraded: 'Зарим үйлчилгээнд саатал гарсан',
+  noData: 'Төлөвийн мэдээлэл одоогоор алга.',
+  incidentsHeading: 'Сүүлийн 90 хоногийн тохиолдол',
+  noIncidents: 'Сүүлийн 90 хоногт тохиолдол бүртгэгдээгүй.',
+  incidentStates: { investigating: 'Шалгаж байна', resolved: 'Шийдвэрлэсэн' },
+  error: 'Мэдээллийг ачаалж чадсангүй.',
+};
+```
+
+Also add to the existing content files: `footer.systemStatusDegraded: 'Зарим үйлчилгээнд саатал гарсан'` and `nav.account: 'Миний бүртгэл'`.
+
+**After the build (owner's task, not yours):** records are not seeded. Add them in the data dashboard: three or four `ServiceStatus` rows (for example "Вэб сайт", "Хүсэлт хүлээн авалт", "Имэйл мэдэгдэл", all `operational`), and real `Partner` and `CustomerStory` rows with `is_published` set to true. Until then the status chip is hidden and Stories and Partners show their empty states.
+
+## 9. Acceptance criteria (record results in `docs/verification-4.md`)
+
+1. **Access.** As an anonymous visitor, from the browser console, list and create on each of the eight entities are denied. No function returns a submission or a record by id.
+2. **Happy path.** Each of the four forms with valid data creates exactly one record with the right fields, shows the success panel, and a reload does not resubmit.
+3. **Idempotency.** Double-clicking submit, pressing Enter twice, or retrying after a timeout creates one record.
+4. **Hostile input.** An empty body, a body over 10 KB, a 2,001-character message, a wrong enum, an unknown field, `kind` set to something else, a missing consent, and a message containing `<script>alert(1)</script>` are each rejected or stored as inert text and are never rendered as HTML anywhere.
+5. **Honeypot.** With the hidden field filled, the UI shows success and no record exists.
+6. **Rate limit.** The fourth submission with the same email within 10 minutes is refused with the `rate_limited` message. A failing count query results in `unavailable` and no record (confirm by reading the code path).
+7. **Offline and slow.** With the network off, or a slow function, the form shows an error state, keeps its values, and a retry works without duplicates.
+8. **Public data.** Unpublished partners, stories and incidents never appear; responses contain only the whitelisted fields; an `http://` website link is not rendered.
+9. **Auth.** Login, registration with the verification code, and Google login work; a wrong password shows the generic message; the navigation shows the avatar when signed in and "Гарах" signs out; reloading keeps the state; nothing sensitive is logged to the console.
+10. **Footer chip.** Hidden while loading, on error and with no data; shows the right text and links to the status page when data exists.
+11. **Responsive.** All eight pages have no horizontal overflow at 360, 390, 768, 820, 821, 1100, 1440 and 1920px; select menus and error text wrap; the form card never exceeds the viewport.
+12. **Hygiene.** No secrets in the client bundle or the repo, no packages outside the allowed list in Part 0, no console errors or warnings, no personal data in any log, `docs/DATA.md` and `docs/SECURITY.md` exist and match the code.
+
+## 10. Reminder (highest priority)
+
+Entities are admin-only. Visitors write only through `submitForm` and read only through the three whitelisted functions. Validate on both sides with the same limits. Idempotent submits, honeypot, rate limit, fail closed, generic errors, no personal data in logs. Never render stored text as HTML. No new packages. Text comes only from `src/content/`. Follow `docs/ENGINEERING.md`.
+
+
+---
+
+# PART 5 — AUDIT AND HARDENING (no new features)
+
+## 0. Role
+
+You are now a reviewer, not the author. Read the whole project as if someone else wrote it. Do not add features, pages or content. Change code only to fix a violation listed below, and change as little as possible. Write what you found and what you changed in `docs/audit.md` (one line per finding: file, problem, fix, status). If something cannot be fixed on this platform, say so there instead of hiding it.
+
+Judge the code by the question a senior engineer asks: not "does it work?" but "what breaks, what can be abused, and will the next developer understand it?"
+
+## 1. Security review
+
+1. Open every entity's access rules and every function. Confirm: entities are admin-only; visitors write only through `submitForm`; public reads go through the three whitelisted functions; nothing returns a record by id; no function returns more fields than listed in `docs/DATA.md`.
+2. Search the whole repo and the built client code for secrets, tokens, keys, `.env` content and service-role usage in client files. There must be none.
+3. Search for `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function`, and links built from data. Remove or neutralise any use. Data links must be `https://` with `rel="noopener noreferrer"`.
+4. Confirm every input is validated on both client and server with the same limits (`src/lib/formLimits.js` and the function), that unknown fields are rejected, and that failures return generic messages.
+5. Confirm rate limiting, the honeypot and idempotency exist and that every failing check fails closed.
+6. Confirm logs contain no names, emails, phone numbers or message text.
+7. Confirm there is no open redirect (no `next`, `redirect` or `returnTo` parameter is followed).
+8. Confirm authentication uses only the platform's SDK methods, nothing stores passwords or tokens in app code, and error messages never reveal whether an email exists.
+
+## 2. Dependency review
+
+Compare `package.json` with the packages the code actually imports. List unused packages and remove only the ones this project added; list what was added in `docs/DEPENDENCIES.md` with a reason, or confirm that nothing was added. Check every added package name for typos and for look-alikes of well-known packages. Confirm Three.js comes from the `three` package and no CDN scripts are loaded at runtime. Confirm the lockfile is committed.
+
+## 3. Reliability review
+
+Verify each failure by reading the code, and by testing where you can:
+
+- WebGL unavailable, shader failure, `webglcontextlost` and `webglcontextrestored` on both canvases.
+- GLB, video and poster failing to load, one at a time: the site stays readable, no uncaught error.
+- Fast scroll up and down, resize, rotate, font load finishing late: anchors are re-measured, no layout jump, no NaN in styles or uniforms.
+- 20 route changes in a row: two canvases only, no growing listener or timer count, memory stable, the video is never restarted.
+- Tab hidden and shown again: loops pause and resume.
+- `prefers-reduced-motion` toggled live.
+- React StrictMode double invocation: no duplicate contexts, observers or timers.
+- Every network call has a timeout, an error state, an empty state and a retry; forms survive a double submit and a lost connection.
+
+## 4. Design fidelity and Mongolian layout review (the most common source of visible breakage)
+
+The design is never changed by this audit. Compare against the reference values in `docs/restore-report.md` if it exists, otherwise against the spec values in `src/styles/tokens.css` (74u hero, 52u headlines, 72u CTA, 32u and 29u card titles, 40u stats, 27u scroll card, 236u wordmark, with the spec's letter-spacing and line-height).
+
+1. Open every route at 360, 390, 430, 600, 768, 820, 821, 1024, 1100, 1280, 1440 and 1920px. For each: no horizontal scroll, no element past the right edge, no word cut or overlapped, nothing sticking to its neighbour, no text clipped by a card, pill, chip, tile or table cell.
+2. Search the styles for `height:` on text containers, `white-space: nowrap`, `text-overflow`, `line-clamp`, `overflow: hidden` on anything holding text. Each must be justified (buttons, nav items and the footer wordmark may) or fixed.
+3. Confirm the fonts: Ө ө Ү ү render in Inter Tight, Fira Code and Cormorant Garamond italic, not in a fallback; every eyebrow, tag, chip, table heading and column heading is in Fira Code; type sizes match the tokens, which match the spec. Report any size, letter-spacing, line-height or font that differs from the spec, and restore it.
+4. Confirm the breakpoint is 820px in both CSS and JS (`STACKED_MAX`), that 821px to 1100px shows the scaled desktop layout, and that there are no minimum text sizes, no maximum widths on the phone container and no extra breakpoints.
+5. Confirm the use-case staircase is built as the spec says (absolute cards at 0, 334u, 668u, 1002u by 0, 150u, 300u, 450u, container 880u) and its heading does not overlap card 3. Confirm that every Mongolian headline, lede, card body and caption takes no more lines than the English original, and that no font was shrunk to achieve it.
+6. Confirm the koi is the real 3D model (no image of a fish anywhere), the pond video plays through the ripple lens, and the footer wordmark fits from 360 to 1920px.
+7. Confirm `<html lang="mn">`, a unique browser title per route, a visible keyboard focus ring everywhere, a working skip link, correct `aria-current`, labelled icon-only buttons, and contrast of `ink-3` text on the violet and night backgrounds. Fix contrast only by changing the colour's alpha if it fails 4.5:1; report it.
+
+## 5. Code quality review (what the next developer will see)
+
+1. Naming and structure follow `docs/ENGINEERING.md`: camelCase, PascalCase components, UPPER_SNAKE_CASE constants, snake_case entity fields, one component per file, files over about 200 lines split, hooks and lib files for non-rendering logic.
+2. No leftovers: no `console.log`, TODO, commented-out code, unused files, unused imports, placeholder or lorem text, emoji in code, comments that restate the code, or platform branding (remove any generated-by notes, tagger packages and template meta tags from `index.html`, `vite.config`, `package.json` and `README.md`).
+3. URLs exist only in `src/content/assets.js` (media) and in content files (links). Visible strings exist only in `src/content/`. Paths exist only in `src/content/routes.js`.
+4. Pure logic (`chartMath.js`, `poseMath.js`, form schemas, validators) is free of DOM access. If the project allows a test runner, add unit tests for: the seeded series generator (same seed gives the same series), pose interpolation (endpoints and midpoint), the form schemas (valid, empty, too long, wrong email), and the server validator (strict fields, limits). If it does not allow one, skip this silently.
+5. `README.md` says what the site is, how to run it, the folder map, where content lives, how to add a route, a partner, a story and a status row. `docs/` contains `ENGINEERING.md`, `DATA.md`, `SECURITY.md`, `DEPENDENCIES.md`, the plans, the verification files and `audit.md`, all consistent with the code.
+
+## 6. Final report
+
+End `docs/audit.md` with three short lists: **fixed**, **cannot be fixed on this platform**, **owner must do** (add real status rows, partners and stories; fill the Facebook and Instagram URLs in `src/content/brand.js`; replace the sample statistics on the home page with real figures; have the privacy policy and terms reviewed by a lawyer; check that the third-party media in `src/content/assets.js` may be used, and host your own copies if not).
+
+Then reply in chat with the same three lists in at most ten lines. Do not paste code.
+
+
+---
+
+# PART 6 — MISSING INTERFACE PARTS (shadcn components, restyled)
+
+## 0. How to read this part
+
+The reference design stays exactly as it is: the hero, the scene, the navigation bar, the studio, packages, use-case staircase, CTA panel and footer are not touched by this part. Their pixels must not change. This part does three things only:
+
+1. Maps the shadcn/ui theme variables to the Crystal Koi colours, so every shared component looks like it belongs to the design.
+2. Applies that skin to the shadcn components the site already uses (the form fields on Part 4's pages, the tabs on `/login`, the accordion on the docs page).
+3. Adds the few small parts the reference design does not have but the finished site needs: breadcrumbs on inner pages, skeleton loading blocks, badges for chips, an inline error alert, tooltips on icon-only buttons, and a proper 404 page.
+
+Work in this order: (a) write `docs/ui-components.md` with the table of section 3 filled in from the real files (which component file exists, where it is used); (b) apply the theme in section 1; (c) restyle and add parts in section 3; (d) add the content in section 5; (e) run section 6 and record the results in `docs/verification-6.md`.
+
+## 1. Rules (read first)
+
+- **Source of components.** Use the shadcn/ui components in `src/components/ui` (the Radix-based versions). shadcn's website shows two code flavours, Radix and Base UI. If you read its component documentation, use the **Radix** tab only. Do not install `@base-ui/*` or `@base-ui-components/*`, do not change `components.json`, and do not add any package other than the `@radix-ui/*` packages that a missing component needs (installed at the same exact version style as the Radix packages already in the project). If a component file is missing, create it by hand following the standard shadcn Radix pattern. If a part cannot be built with an allowed package, build it without one (native `<details>`, plain elements, or the existing code).
+- **Do not replace anything that already works.** The custom dropdown navigation, the mobile drawer, the dashboard table, the charts, the footer status chip and the forms' behaviour from Prompts 1–4 stay as they are. This part only restyles shared components and adds the parts in section 3.
+- **Colours and sizes come from the design.** Use the tokens and recipes already in the project (`src/styles/tokens.css`, the glass surface, the line colour, the dashboard panel gradient, the live chip). Do not invent new colours, shadows, radii or font sizes. Sizes are in `u` (the project's `--u` unit, scaled as in Part 1; on the phone layout, 820px and below, the phone values apply as written). Fonts are the spec's: Inter Tight for text, Fira Code for labels, tags, chips and numbers.
+- **Text is fitted to the design.** Every string must fit its box without shrinking fonts or adding breakpoints; shorten the text instead. All visible strings come from `src/content/` (section 5), none are typed inside components.
+- **Always dark.** The site has one theme. Put the values in `:root` and also in `.dark` (identical). Do not add a theme switcher.
+- **Code style.** Follow `docs/ENGINEERING.md`: camelCase in JS, PascalCase components, one component per file, no dead code, no commented-out code, no `any`-style shortcuts, props validated by the way the project already does it.
+
+## 2. Theme variables
+
+Open `src/index.css` and look at how the shadcn variables are written (HSL triplets such as `222 47% 11%`, or `oklch(...)`). Keep that format and convert the values below into it. Do not rename variables.
+
+| shadcn variable | Crystal Koi value | Source in the design |
+|---|---|---|
+| `--background` | `#0d0830` | navy, page background |
+| `--foreground` | `#f4f2ff` | ink |
+| `--card`, `--popover` | `#1a1049` | opaque stand-in for the dashboard panel gradient (the real glass recipe is applied by class, see section 3) |
+| `--card-foreground`, `--popover-foreground` | `#f4f2ff` | ink |
+| `--primary` | `#6f78ff` | peri, primary fills |
+| `--primary-foreground` | `#f4f2ff` | ink |
+| `--secondary` | `#2a2070` | opaque stand-in for the grey-glass pill |
+| `--secondary-foreground` | `#f4f2ff` | ink |
+| `--muted` | `#17104a` | field fill, tinted `rgba(170,150,255,.07)` by class |
+| `--muted-foreground` | `#a9a4d6` | ink-3 on navy (`rgba(220,214,255,.5)` flattened) |
+| `--accent` | `#2c2178` | dashboard active-item background (`rgba(140,120,255,.16)` flattened) |
+| `--accent-foreground` | `#f4f2ff` | ink |
+| `--destructive` | `#ff8f9d` | the outage colour from Part 4 |
+| `--destructive-foreground` | `#0d0830` | navy |
+| `--border` | `#2d2563` | line colour, `rgba(196,178,255,.15)` flattened |
+| `--input` | `#2d2563` | same |
+| `--ring` | `#8d94ff` | peri-2, focus ring |
+| `--radius` | `0.625rem` | 10px, the spec's pill radius; components that must scale with `u` use `calc(10 * var(--u))` through their class, as the form fields in Part 4 do |
+
+Also add `--z-popover` to `src/styles/tokens.css`: it is the header's `z-index` plus 10, read from the real header styles. Every shadcn popup (select menu, tooltip) uses it so it always sits above the navigation and above the two scene canvases.
+
+## 3. Components
+
+For each row, edit the component file in `src/components/ui` (they are your own source files, not a library: change their default classes, do not wrap them in hack components). Fill the "Used in" column of `docs/ui-components.md` from the real code.
+
+| Component | Where it is used | What to do |
+|---|---|---|
+| `Label`, `Input`, `Textarea` | The four forms (Part 4) | Field recipe from Part 4: 48u tall (`min-height`, not `height`, for the textarea), radius 10u, background `rgba(170,150,255,.07)`, border `rgba(190,170,255,.14)`, text `ink`, placeholder `ink-3`, focus ring 2px `#8d94ff` with no outline jump; labels 13u `ink-2`; invalid state: border `#ff9db0`, `aria-invalid` set from the form library; disabled: opacity .5. |
+| `Select` | The three select fields in Part 4 | The trigger uses the field recipe plus a 10u chevron (the same path as the navigation chevron, `M2 3.5 l3 3 3-3`). The menu is a glass surface (the spec's glass recipe), radius 10u, padding 6u, `z-index: var(--z-popover)`; items 14u, padding 9u 12u, radius 7u; highlighted item `rgba(140,120,255,.16)`; selected item shows a small check. Menu width equals the trigger width, never wider than the viewport minus 24px, items may wrap to two lines. Use `position="popper"` with a 6u offset and collision padding 12px. |
+| `Checkbox` | The consent field | 18u box, radius 5u, border `rgba(190,170,255,.3)`, checked: background `#6f78ff` with a white check; focus ring as above; the label text beside it wraps normally and the whole label is the click target. |
+| `Tabs` | `/login` (two tabs) | Tab list: the same recipe as the centre menu of the navigation bar (padding 5u, radius 12u, `rgba(120,124,220,.28)` background, 1px border `rgba(200,200,255,.22)`, blur 14px). Active tab: `rgba(140,120,255,.16)` background, `ink` text. Inactive: `ink-2`. Arrow keys move between tabs (Radix does this; do not break it). |
+| `Accordion` | Docs page FAQ (`/resources/docs`) | `type="single"`, `collapsible`. Each item is a glass row (radius 12u, padding 0 20u), 1px line-colour border; trigger 16u, weight 500, padding 18u 0, a 10u chevron on the right that rotates 180° in .25s; content 15u, `ink-2`, line-height 1.55. Open and close animate height in .25s ease. With `prefers-reduced-motion: reduce` there is no animation. The `/privacy` link inside the answer keeps working. |
+| `Badge` (create if missing) | Industry chip on `/stories`, category chips on `/resources/partners`, state chips on `/resources/status` | Variants: `neutral` (Fira Code 11u, uppercase, letter-spacing .06em, `ink-2`, border line colour, radius 999px, padding 4u 10u), `live` (copy the existing live-chip values from the dashboard deals table in Part 2; do not invent new ones), `warn` (same shape as `live`, colour `#ffc27a`), `error` (same shape, colour `#ff8f9d`). Replace the hand-made chips on the three pages above with `Badge`; the home page's chips are not touched. |
+| `Skeleton` | Loading states of `/stories`, `/resources/partners`, `/resources/status` | Background `rgba(170,150,255,.07)`, radius 8u, a soft shimmer (a 1.6s gradient sweep of `rgba(190,170,255,.08)`); no shimmer with `prefers-reduced-motion: reduce`. Replace the existing skeleton blocks from Part 4 with this component; keep their sizes. |
+| `Alert` | The error message above the submit button in the four forms, and the "try again" error state of the three data pages | Glass-tinted: background `rgba(255,143,157,.08)`, border `rgba(255,143,157,.3)`, radius 10u, padding 12u 14u, text 14u `#ff9db0`, `role="alert"`. The text comes from the existing content; no new strings. |
+| `Tooltip` | Icon-only buttons: footer social icons, the contact info card's social icons, the navigation avatar button | Tooltip text equals the element's existing `aria-label`; no new strings. Shows on hover and on keyboard focus only (never on touch). Glass surface, radius 8u, padding 6u 10u, 12u text, 8u offset, `z-index: var(--z-popover)`, delay 300ms. Wrap the app once in `TooltipProvider` at the top of the router tree. |
+| `Breadcrumb` | Every inner page header (all pages that use `PageShell`, not the home page and not the 404) | Above the eyebrow: `Нүүр / <group> / <page title>` (for pages that belong to a nav group) or `Нүүр / <page title>`. 13u, `ink-3`, the last item `ink` weight 500, separator `/` with 2u spacing, links go to their route, the current page has `aria-current="page"`. Group names and page titles come from the existing nav and page content; the only new string is the word for "home" (section 5). Inside the `<nav aria-label>` landmark. On the phone layout it may wrap to two lines and must never overflow sideways. |
+| `Button` | Not restyled | The navigation pills, hero buttons, CTA buttons and footer keep the spec's recipes. Leave the shared `Button` as it is, except to make sure its focus ring uses `--ring`. |
+
+## 4. 404 page
+
+The route `*` currently shows a plain message. Make it a proper page inside `PageShell` (no breadcrumb): a Fira Code eyebrow `404`, the title and text from `common`, and two buttons under the text, built with the same pill recipes as the navigation ("Book a Call" grey glass pill for the secondary, the dark pill for the primary): primary links to `/`, secondary to `/contact`. Set `document.title` for it and keep the scene in its inner-page mode. No illustration, no animation.
+
+## 5. Content (Mongolian). Create `src/content/uiContent.js` exactly; do not reword
+
+```js
+export const uiContent = {
+  breadcrumb: { label: 'Байршил', home: 'Нүүр' },
+  notFound: {
+    primary: 'Нүүр хуудас',
+    secondary: 'Холбоо барих',
+  },
+};
+```
+
+`breadcrumb.label` is the `aria-label` of the breadcrumb `<nav>`. The 404 title and text already exist as `common.notFoundTitle` and `common.notFoundText`; use them and use `common.backHome` as the `aria-label` of the primary button only if the visible label would otherwise be unclear. Do not add any other string.
+
+## 6. Acceptance criteria (record results in `docs/verification-6.md`)
+
+1. **The reference design is unchanged.** Take screenshots of `/` at 1440×900, 1100×800 and 390×844 before and after this part: they are pixel-identical. The hero, scene, navigation bar, studio, packages, staircase, CTA and footer are not touched.
+2. **No new dependencies** other than `@radix-ui/*` packages for components that were missing; there is no `@base-ui` import anywhere; `components.json` is unchanged.
+3. **Forms.** All four forms on Part 4's pages use the skinned `Input`, `Textarea`, `Select`, `Checkbox` and `Label`; invalid fields get the error border; the select menu opens inside the viewport at 360, 390, 768, 821 and 1440px, sits above the header and the scene, and its items wrap without overflow; Escape closes it; arrow keys, Home, End and typing a letter move through the options.
+4. **Tabs and accordion.** `/login` tabs switch with the mouse and with the arrow keys; the docs FAQ opens one answer at a time, keeps the privacy link, and does not animate with `prefers-reduced-motion: reduce`.
+5. **Badges, skeletons, alerts.** The three data pages show skeleton blocks while loading, the error `Alert` with the retry button on failure, and `Badge` chips; the sizes of the skeleton blocks match the real cards so nothing jumps when data arrives.
+6. **Breadcrumbs.** Present on every inner page with correct group names and links, hidden on the home page and the 404; no horizontal overflow at 360, 390, 768, 820, 821, 1100, 1440 and 1920px.
+7. **Tooltips.** Appear on hover and on keyboard focus for the icon-only buttons, never on touch, and disappear on Escape.
+8. **404.** An unknown URL such as `/does-not-exist` shows the new page with working buttons; the browser title is set.
+9. **Fonts and text.** Fira Code for chips, eyebrows and the 404 eyebrow; Ө ө Ү ү render correctly in every new element; no string in any new component is hard-coded; every new string takes no more lines than its slot allows.
+10. **Console and accessibility.** No console errors or warnings on any route; every interactive part has a visible focus ring, an accessible name, and works with the keyboard alone.
+
+## 7. Reminder (highest priority)
+
+Do not change the reference design. Only Radix-based shadcn components; no Base UI, no packages beyond the Radix ones a missing component needs. Colours, radii and recipes come from the existing tokens and sections, never invented. All text from `src/content/`. Fonts are never shrunk to fit text. Follow `docs/ENGINEERING.md`.
+
+
+---
+
+# PART 7 — SCENE VERIFICATION AND FINAL ACCEPTANCE
+
+## 7.1 Scene audit (write the result to `docs/scene-audit.md`)
+
+For each item write one line: PRESENT AND CORRECT / PRESENT BUT DIFFERENT (say how) / MISSING / REPLACED BY SOMETHING ELSE (say by what). Then repair every item that is not PRESENT AND CORRECT so that it matches the spec's sections 5, 9, 10, 11 and 13 (in the Part 1 extracts), word for word, numbers included. Where a spec number and the code disagree, the spec wins.
+
+1. The pond video element, its CORS setting (`crossOrigin="anonymous"`), and its upload to a WebGL texture every frame.
+2. The ripple lens shader: ripple, red/blue split, presence easing, cover fit with 0.975 zoom, tilt.
+3. The day plate, violet layer, night plate and their scroll crossfade formulas.
+4. The koi: GLTFLoader loading the GLB URL; normalisation (bake transforms, longest axis, nose to +X, centre, scale to length 1); the physical material; the swim vertex shader; scroll-speed coupling; the six poses and the phone poses; per-frame easing; idle bob; pointer tilt.
+5. Elements with the ids `hero`, `studio`, `dash`, `packs`, `uses`, `end` exist on the home page (the poses are measured from them; `dash` is the dashboard panel).
+
+If loading the GLB fails, find out why (network blocked, CORS, parse error, wrong path, out of memory) and state the exact error in your final reply. The koi canvas carries `data-koi-state="loading"`, then `"ready"` or `"failed"`, so the state is visible in the browser inspector. Never fall back to an image or to code-drawn shapes.
+
+## 7.2 Final acceptance (record in `docs/verification-7.md`)
+
+1. No image, GIF, video or shape stands in for the koi or the pond anywhere in the project; no code draws the pond procedurally.
+2. The koi canvas has `data-koi-state="ready"`; the fish is a lilac-pink glass-like 3D shape that bends as it swims and swims faster while you scroll.
+3. The koi glides through the six poses as you scroll the home page and does not jump when you change page.
+4. The hero pond video plays and loops, and ripples with a red/blue fringe around the mouse pointer (mouse only); the whole view leans up to 1 degree toward the pointer.
+5. Exactly two `<canvas>` elements exist, also after 10 page changes. No console errors or warnings on any route.
+6. With the GLB URL blocked the page still works and shows no koi; with the video URL blocked the day picture stays visible.
+7. With reduced motion on, the spec's reduced-motion behaviour applies, and toggling the setting live takes effect without reload.
+8. Every route in Part 1's route list opens; every link and button goes where the content says; there is no horizontal scroll at 360, 390, 600, 768, 820, 821, 1024, 1100, 1280, 1440 and 1920px.
+9. The design values of Part 1 section 4 (type tokens, Fira Code labels, 820px breakpoint, staircase construction, scroll card, wordmark) are exactly the spec's.
+10. All four forms save records, double submits create one record, and public pages show only published data.
+
+Finish with a reply of at most 8 lines: what was replaced or missing, the cause if found, and anything you could not fix.
