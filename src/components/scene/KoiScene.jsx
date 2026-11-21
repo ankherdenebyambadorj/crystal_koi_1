@@ -91,7 +91,7 @@ export function KoiScene({ mode, reducedMotion }) {
         const roomEnv = new RoomEnvironment();
         envTexture = pmremGenerator.fromScene(roomEnv, 0.04).texture;
         scene.environment = envTexture;
-        scene.environmentIntensity = 0.75;
+        // Leave scene.environmentIntensity at 1: three 0.170 ignores material.envMapIntensity on scene.environment.
         roomEnv.dispose();
         pmremGenerator.dispose();
 
@@ -106,19 +106,9 @@ export function KoiScene({ mode, reducedMotion }) {
         rig.add(body);
         scene.add(rig);
 
-        const placeholderMat = new THREE.MeshBasicMaterial();
         const loader = new GLTFLoader();
         loader.setCrossOrigin('anonymous');
-        loader.register(() => ({
-          name: 'KOI_SKIP_TEXTURES',
-          loadMaterial: () => Promise.resolve(placeholderMat),
-        }));
-        let gltf;
-        try {
-          gltf = await new Promise((resolve, reject) => loader.load(KOI_MODEL_URL, resolve, undefined, reject));
-        } finally {
-          placeholderMat.dispose();
-        }
+        const gltf = await new Promise((resolve, reject) => loader.load(KOI_MODEL_URL, resolve, undefined, reject));
         if (disposed) return undefined;
 
         buildKoiMeshes(THREE, gltf.scene, swimUniforms, body, disposables);
@@ -269,7 +259,6 @@ export function KoiScene({ mode, reducedMotion }) {
       if (envTexture) envTexture.dispose();
       if (renderer) {
         renderer.dispose();
-        try { renderer.forceContextLoss(); } catch { /* noop */ }
       }
     };
   }, []);
