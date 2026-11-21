@@ -6,19 +6,13 @@ export function buildKoiMeshes(THREE, gltfScene, swimUniforms, body, disposables
     if (!child.isMesh || !child.geometry) return;
     const geom = child.geometry.clone();
     geom.applyMatrix4(child.matrixWorld);
-    disposables.geometries.push(geom);
-
-    const origMat = Array.isArray(child.material) ? child.material[0] : child.material;
-    const origMap = origMat?.map || null;
-    if (origMap) {
-      origMap.colorSpace = THREE.SRGBColorSpace;
-      disposables.textures.push(origMap);
+    if (geom.hasAttribute('color')) {
+      geom.deleteAttribute('color');
     }
+    disposables.geometries.push(geom);
 
     const mat = new THREE.MeshPhysicalMaterial({
       color: 0x8a5cff,
-      map: origMap,
-      emissiveMap: origMap,
       roughness: 0.18,
       metalness: 0.15,
       clearcoat: 1,
@@ -53,6 +47,12 @@ export function buildKoiMeshes(THREE, gltfScene, swimUniforms, body, disposables
 
     disposables.materials.push(mat);
     meshes.push(new THREE.Mesh(geom, mat));
+
+    const origMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const origMat of origMaterials) {
+      origMat?.map?.dispose?.();
+      origMat?.dispose?.();
+    }
   });
 
   if (meshes.length === 0) throw new Error('Empty koi geometry');

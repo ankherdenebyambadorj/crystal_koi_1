@@ -5,9 +5,11 @@ import { brand } from '../content/brand.js';
 import { ROUTES } from '../content/routes.js';
 import { common } from '../content/siteContent.js';
 import { uiContent } from '../content/uiContent.js';
+import { useNoIndex } from '../hooks/useNoIndex.js';
 import { usePageMeta } from '../hooks/usePageMeta.js';
 
 export function NotFoundPage() {
+  useNoIndex();
   usePageMeta({
     title: `${common.notFoundTitle} — ${brand.name}`,
     description: uiContent.notFoundBody,

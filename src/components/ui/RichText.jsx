@@ -17,10 +17,10 @@ export function RichText({ parts }) {
         </span>
       );
     }
-    if (part && typeof part.serif === 'string') {
+    if (part && (typeof part.serif === 'string' || typeof part.em === 'string')) {
       return (
         <span key={idx} className="ck-serif">
-          {part.serif}
+          {typeof part.serif === 'string' ? part.serif : part.em}
         </span>
       );
     }

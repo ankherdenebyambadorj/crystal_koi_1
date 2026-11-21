@@ -33,7 +33,7 @@ export function buildCspHeader(isProd) {
     "font-src 'self' https://fonts.gstatic.com",
     `img-src 'self' data: blob: ${uniqueImg}`.trim(),
     `media-src 'self' blob: ${uniqueMedia}`.trim(),
-    `connect-src 'self' ${uniqueConnect}`,
+    `connect-src 'self' blob: ${uniqueConnect}`.trim(),
     `frame-src ${googleOrigin}`,
     "worker-src 'self' blob:",
     "object-src 'none'",

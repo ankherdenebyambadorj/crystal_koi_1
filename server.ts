@@ -19,6 +19,7 @@ import {
 import { initStore, purgeExpiredAuthRecords } from './functions/db.js';
 import { getPartners, getServiceStatus, getStories } from './functions/publicContent.js';
 import { checkRateLimit } from './functions/rateLimit.js';
+import { isKnownRoute } from './functions/knownRoutes.js';
 import { apiSecurityMiddleware, securityHeadersMiddleware } from './functions/security.js';
 import { handleSubmitForm } from './functions/submitForm.js';
 
@@ -174,6 +175,11 @@ async function startServer() {
     res.status(result.status).json(result.body);
   });
 
+  app.get('/api/health', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ ok: true });
+  });
+
   app.use('/api', (_req, res) => {
     res.status(404).json({ ok: false, code: 'not_found' });
   });
@@ -188,13 +194,20 @@ async function startServer() {
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     app.use(express.static(distDir, { index: false }));
-    app.get('*', (_req, res) => {
-      const indexFile = path.join(distDir, 'index.html');
-      if (fs.existsSync(indexFile)) {
-        res.sendFile(indexFile);
-      } else {
-        res.status(404).send('Not found');
+    app.use((req, res) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        return res.status(404).type('text/plain').send('Not found');
       }
+      if (path.posix.extname(req.path)) {
+        return res.status(404).type('text/plain').send('Not found');
+      }
+      const indexFile = path.join(distDir, 'index.html');
+      if (!fs.existsSync(indexFile)) {
+        return res.status(404).type('text/plain').send('Build output not found.');
+      }
+      const status = isKnownRoute(req.path) ? 200 : 404;
+      res.setHeader('Cache-Control', 'no-cache');
+      return res.status(status).sendFile(indexFile);
     });
   }
 

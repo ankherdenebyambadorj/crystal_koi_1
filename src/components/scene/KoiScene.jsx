@@ -106,9 +106,19 @@ export function KoiScene({ mode, reducedMotion }) {
         rig.add(body);
         scene.add(rig);
 
+        const placeholderMat = new THREE.MeshBasicMaterial();
         const loader = new GLTFLoader();
         loader.setCrossOrigin('anonymous');
-        const gltf = await new Promise((resolve, reject) => loader.load(KOI_MODEL_URL, resolve, undefined, reject));
+        loader.register(() => ({
+          name: 'KOI_SKIP_TEXTURES',
+          loadMaterial: () => Promise.resolve(placeholderMat),
+        }));
+        let gltf;
+        try {
+          gltf = await new Promise((resolve, reject) => loader.load(KOI_MODEL_URL, resolve, undefined, reject));
+        } finally {
+          placeholderMat.dispose();
+        }
         if (disposed) return undefined;
 
         buildKoiMeshes(THREE, gltf.scene, swimUniforms, body, disposables);

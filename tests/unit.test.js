@@ -514,3 +514,24 @@ test('pgRepo buildPoolConfig enables verified TLS for sslmode=require, PGSSL=1, 
   });
   assert.deepEqual(envSsl.ssl, { rejectUnauthorized: true, ca: '---CERT---\nLINE2' });
 });
+
+test('isKnownRoute matches ROUTES exactly with trailing-slash normalization and case sensitivity', async () => {
+  const { isKnownRoute } = await import('../functions/knownRoutes.js');
+
+  assert.equal(isKnownRoute('/'), true);
+  assert.equal(isKnownRoute('/contact'), true);
+  assert.equal(isKnownRoute('/contact/'), true);
+  assert.equal(isKnownRoute('/product/curation'), true);
+  assert.equal(isKnownRoute('/resources/docs'), true);
+  assert.equal(isKnownRoute('/privacy'), true);
+  assert.equal(isKnownRoute('/terms'), true);
+  assert.equal(isKnownRoute('/login'), true);
+
+  assert.equal(isKnownRoute('/nope'), false);
+  assert.equal(isKnownRoute('/product/nope'), false);
+  assert.equal(isKnownRoute('/contact/extra'), false);
+  assert.equal(isKnownRoute('/Contact'), false);
+  assert.equal(isKnownRoute('/assets/missing.js'), false);
+  assert.equal(isKnownRoute(''), false);
+});
+
