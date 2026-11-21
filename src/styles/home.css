@@ -271,7 +271,8 @@
   transition: background 0.2s, color 0.2s;
 }
 
-.dash-seg-btn.is-active {
+.dash-seg-btn.is-active,
+.dash-seg-btn[data-state="on"] {
   background: rgba(255, 255, 255, 0.1);
   color: var(--ink);
 }
@@ -932,7 +933,6 @@
   grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr));
   gap: calc(40 * var(--u));
   padding-bottom: calc(40 * var(--u));
-  border-bottom: 1px solid var(--line);
 }
 
 .footer-brand-logo {
@@ -1119,7 +1119,7 @@
   .dash-search,
   .dash-sidebar,
   .dash-new-deal,
-  .dash-trend-chip {
+  .ck-chip.dash-trend-chip {
     display: none;
   }
 

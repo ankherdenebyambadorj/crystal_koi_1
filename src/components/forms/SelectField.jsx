@@ -1,4 +1,5 @@
 import { Controller } from 'react-hook-form';
+import { FormItem, FormMessage } from '../ui/form.jsx';
 import { Label } from '../ui/label.jsx';
 import {
   Select,
@@ -11,7 +12,7 @@ import {
 export function SelectField({ id, name, control, label, placeholder, options, error }) {
   const errorId = error ? `${id}-err` : undefined;
   return (
-    <div className="form-field">
+    <FormItem id={id}>
       <Label htmlFor={id}>{label}</Label>
       <Controller
         name={name}
@@ -31,11 +32,7 @@ export function SelectField({ id, name, control, label, placeholder, options, er
           </Select>
         )}
       />
-      {error && (
-        <p id={errorId} className="form-error">
-          {error}
-        </p>
-      )}
-    </div>
+      <FormMessage id={errorId}>{error}</FormMessage>
+    </FormItem>
   );
 }

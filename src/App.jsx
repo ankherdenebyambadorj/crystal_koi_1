@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SiteNav } from './components/layout/SiteNav.jsx';
 import { SceneLayout } from './components/scene/SceneLayout.jsx';
+import { Toaster } from './components/ui/toast.jsx';
 import { TooltipProvider } from './components/ui/tooltip.jsx';
 import { ROUTES } from './content/routes.js';
 import { common } from './content/siteContent.js';
@@ -10,19 +11,23 @@ import { useOverflowWatch } from './hooks/useOverflowWatch.js';
 import { useReducedMotion } from './hooks/useReducedMotion.js';
 import { useViewportUnit } from './hooks/useViewportUnit.js';
 import { measureAnchors } from './lib/measureAnchors.js';
-import { BookCallPage } from './pages/BookCallPage.jsx';
-import { ContactPage } from './pages/ContactPage.jsx';
-import { ContentPage } from './pages/ContentPage.jsx';
-import { DocsPage } from './pages/DocsPage.jsx';
-import { GetStartedPage } from './pages/GetStartedPage.jsx';
 import { HomePage } from './pages/HomePage.jsx';
-import { LegalPage } from './pages/LegalPage.jsx';
-import { LoginPage } from './pages/LoginPage.jsx';
-import { NotFoundPage } from './pages/NotFoundPage.jsx';
-import { OptOutPage } from './pages/OptOutPage.jsx';
-import { PartnersPage } from './pages/PartnersPage.jsx';
-import { StatusPage } from './pages/StatusPage.jsx';
-import { StoriesPage } from './pages/StoriesPage.jsx';
+
+const lazyNamed = (importer, exportName) =>
+  lazy(() => importer().then((mod) => ({ default: mod[exportName] })));
+
+const BookCallPage = lazyNamed(() => import('./pages/BookCallPage.jsx'), 'BookCallPage');
+const ContactPage = lazyNamed(() => import('./pages/ContactPage.jsx'), 'ContactPage');
+const ContentPage = lazyNamed(() => import('./pages/ContentPage.jsx'), 'ContentPage');
+const DocsPage = lazyNamed(() => import('./pages/DocsPage.jsx'), 'DocsPage');
+const GetStartedPage = lazyNamed(() => import('./pages/GetStartedPage.jsx'), 'GetStartedPage');
+const LegalPage = lazyNamed(() => import('./pages/LegalPage.jsx'), 'LegalPage');
+const LoginPage = lazyNamed(() => import('./pages/LoginPage.jsx'), 'LoginPage');
+const NotFoundPage = lazyNamed(() => import('./pages/NotFoundPage.jsx'), 'NotFoundPage');
+const OptOutPage = lazyNamed(() => import('./pages/OptOutPage.jsx'), 'OptOutPage');
+const PartnersPage = lazyNamed(() => import('./pages/PartnersPage.jsx'), 'PartnersPage');
+const StatusPage = lazyNamed(() => import('./pages/StatusPage.jsx'), 'StatusPage');
+const StoriesPage = lazyNamed(() => import('./pages/StoriesPage.jsx'), 'StoriesPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,33 +104,36 @@ function AppShell() {
       <SceneLayout mode={isHome ? 'home' : 'inner'} reducedMotion={reducedMotion} />
       <SiteNav />
       <main id="main" ref={mainRef} className="site-main" tabIndex={-1}>
-        <Routes>
-          <Route path={ROUTES.home} element={<HomePage reducedMotion={reducedMotion} />} />
-          <Route path={ROUTES.productCuration} element={<ContentPage />} />
-          <Route path={ROUTES.productMonetization} element={<ContentPage />} />
-          <Route path={ROUTES.productForecasts} element={<ContentPage />} />
-          <Route path={ROUTES.useCaseMediaAgency} element={<ContentPage />} />
-          <Route path={ROUTES.useCaseDirectAdvertiser} element={<ContentPage />} />
-          <Route path={ROUTES.useCasePublisher} element={<ContentPage />} />
-          <Route path={ROUTES.useCaseAdTech} element={<ContentPage />} />
-          <Route path={ROUTES.channelCtv} element={<ContentPage />} />
-          <Route path={ROUTES.channelDisplayNative} element={<ContentPage />} />
-          <Route path={ROUTES.channelDooh} element={<ContentPage />} />
-          <Route path={ROUTES.channelVideoAudio} element={<ContentPage />} />
-          <Route path={ROUTES.docs} element={<DocsPage reducedMotion={reducedMotion} />} />
-          <Route path={ROUTES.privacy} element={<LegalPage />} />
-          <Route path={ROUTES.terms} element={<LegalPage />} />
-          <Route path={ROUTES.partners} element={<PartnersPage />} />
-          <Route path={ROUTES.status} element={<StatusPage />} />
-          <Route path={ROUTES.contact} element={<ContactPage />} />
-          <Route path={ROUTES.stories} element={<StoriesPage />} />
-          <Route path={ROUTES.bookACall} element={<BookCallPage />} />
-          <Route path={ROUTES.getStarted} element={<GetStartedPage />} />
-          <Route path={ROUTES.login} element={<LoginPage />} />
-          <Route path={ROUTES.optOut} element={<OptOutPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path={ROUTES.home} element={<HomePage reducedMotion={reducedMotion} />} />
+            <Route path={ROUTES.productCuration} element={<ContentPage />} />
+            <Route path={ROUTES.productMonetization} element={<ContentPage />} />
+            <Route path={ROUTES.productForecasts} element={<ContentPage />} />
+            <Route path={ROUTES.useCaseMediaAgency} element={<ContentPage />} />
+            <Route path={ROUTES.useCaseDirectAdvertiser} element={<ContentPage />} />
+            <Route path={ROUTES.useCasePublisher} element={<ContentPage />} />
+            <Route path={ROUTES.useCaseAdTech} element={<ContentPage />} />
+            <Route path={ROUTES.channelCtv} element={<ContentPage />} />
+            <Route path={ROUTES.channelDisplayNative} element={<ContentPage />} />
+            <Route path={ROUTES.channelDooh} element={<ContentPage />} />
+            <Route path={ROUTES.channelVideoAudio} element={<ContentPage />} />
+            <Route path={ROUTES.docs} element={<DocsPage reducedMotion={reducedMotion} />} />
+            <Route path={ROUTES.privacy} element={<LegalPage />} />
+            <Route path={ROUTES.terms} element={<LegalPage />} />
+            <Route path={ROUTES.partners} element={<PartnersPage />} />
+            <Route path={ROUTES.status} element={<StatusPage />} />
+            <Route path={ROUTES.contact} element={<ContactPage />} />
+            <Route path={ROUTES.stories} element={<StoriesPage />} />
+            <Route path={ROUTES.bookACall} element={<BookCallPage />} />
+            <Route path={ROUTES.getStarted} element={<GetStartedPage />} />
+            <Route path={ROUTES.login} element={<LoginPage />} />
+            <Route path={ROUTES.optOut} element={<OptOutPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
       </main>
+      <Toaster />
     </>
   );
 }

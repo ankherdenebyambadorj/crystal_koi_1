@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { STACKED_MAX } from '../content/routes.js';
+import { PHONE_UNIT_MAX_WIDTH, STACKED_MAX } from '../content/routes.js';
 
 export function useViewportUnit() {
   const [isStacked, setIsStacked] = useState(() =>
@@ -10,7 +10,8 @@ export function useViewportUnit() {
     const update = () => {
       const width = document.documentElement.clientWidth || window.innerWidth || 1440;
       const stacked = width <= STACKED_MAX;
-      const unit = width / (stacked ? 390 : 1440);
+      const effectiveWidth = stacked ? Math.min(width, PHONE_UNIT_MAX_WIDTH) : width;
+      const unit = effectiveWidth / (stacked ? 390 : 1440);
       document.documentElement.style.setProperty('--u', `${unit}px`);
       setIsStacked(stacked);
     };

@@ -1,3 +1,4 @@
+import { FormItem, FormMessage } from '../ui/form.jsx';
 import { Input } from '../ui/input.jsx';
 import { Label } from '../ui/label.jsx';
 
@@ -13,7 +14,7 @@ export function TextField({
 }) {
   const errorId = error ? `${id}-err` : undefined;
   return (
-    <div className="form-field">
+    <FormItem id={id}>
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -25,11 +26,7 @@ export function TextField({
         aria-describedby={errorId}
         {...register}
       />
-      {error && (
-        <p id={errorId} className="form-error">
-          {error}
-        </p>
-      )}
-    </div>
+      <FormMessage id={errorId}>{error}</FormMessage>
+    </FormItem>
   );
 }

@@ -4,6 +4,7 @@ import { FeatureIcon } from '../components/icons/featureIcons.jsx';
 import { PageShell } from '../components/layout/PageShell.jsx';
 import { ActionLink } from '../components/ui/ActionLink.jsx';
 import { RichText } from '../components/ui/RichText.jsx';
+import { Separator } from '../components/ui/separator.jsx';
 import { brand } from '../content/brand.js';
 import { packs } from '../content/homeContent.js';
 import { contentPages, pageCommon } from '../content/pagesContent.js';
@@ -91,6 +92,7 @@ export function ContentPage() {
 
       {related.length > 0 && (
         <div ref={relatedRef} className={`page-related reveal ${relatedIn ? 'in' : ''}`}>
+          <Separator />
           <div className="page-section-label">{pageCommon.alsoSee}</div>
           <div className="page-related-links">
             {related.map((item) => (

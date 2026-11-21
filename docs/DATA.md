@@ -1,18 +1,20 @@
 # Crystal Koi — Data Model & Access Rules
 
-## Storage
-- Engine: SQLite (`node:sqlite` `DatabaseSync`), path outside `public/` and `src/` (`data/crystalkoi.sqlite`).
-- Zero seed records inserted by application code.
+## Storage Engine
+- Selected at runtime by `functions/db.js`:
+  - **PostgreSQL (`functions/repository/pgRepo.js`)**: Active whenever `DATABASE_URL` is configured (recommended for Cloud Run and multi-instance deployments).
+  - **SQLite (`functions/repository/sqliteRepo.js`)**: Local fallback (`node:sqlite`, `DB_PATH`, defaults to `data/crystalkoi.sqlite`) for local development and single-instance testing.
+- Zero seed rows are inserted automatically by application startup.
 
-## Lead & Intake Entities (Create via `submitForm` only; Admin-only Read/Update/Delete)
+## Lead & Intake Tables (Create via `POST /api/fn/submitForm`; Admin-only Read/Update)
 | Table | Columns | Constraints / Notes |
 | --- | --- | --- |
-| `call_requests` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `preferred_window`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `preferred_window` in `morning\|afternoon\|evening`; `status` forced `'new'` |
-| `access_requests` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `role`, `monthly_volume`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `role` & `monthly_volume` enums; `status` forced `'new'` |
-| `contact_messages` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `topic`, `message`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `topic` in `general\|partnership\|support`; `message` 1..2000 chars |
-| `opt_out_requests` | `id`, `request_id`, `email`, `reason`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `reason` optional <= 500 chars; `status` forced `'new'` |
+| `call_requests` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `preferred_window`, `consent_given`, `consent_at`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `preferred_window` in `morning\|afternoon\|evening`; `consent_given` boolean `true`; `status` `'new'` |
+| `access_requests` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `role`, `monthly_volume`, `consent_given`, `consent_at`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `role` & `monthly_volume` enums; `consent_given` boolean `true`; `status` `'new'` |
+| `contact_messages` | `id`, `request_id`, `full_name`, `email`, `phone`, `company`, `topic`, `message`, `consent_given`, `consent_at`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `topic` in `general\|partnership\|support`; `message` 1..2000 chars; `consent_given` boolean `true` |
+| `opt_out_requests` | `id`, `request_id`, `email`, `reason`, `status`, `source_path`, `created_at` | `request_id` UNIQUE UUID; `reason` optional `<= 500` chars; `status` `'new'` |
 
-## Published Public Content Entities (Read via whitelisted functions only; Admin-only Write)
+## Published Public Content Tables (Whitelisted Server Reads Only)
 | Table | Public Columns Returned | Server Function |
 | --- | --- | --- |
 | `partners` | `id`, `name`, `category`, `description`, `website_url` | `getPartners` (`is_published = 1`, `ORDER BY sort_order, id`, `LIMIT 100`) |
@@ -20,7 +22,7 @@
 | `service_status` | `id`, `component_name`, `state`, `note`, `updated_at` | `getServiceStatus` (`is_published = 1`, `ORDER BY sort_order, id`) |
 | `status_incidents` | `id`, `title`, `severity`, `summary`, `state`, `occurred_at` | `getServiceStatus` (`is_published = 1` within last 90 days, newest first, `LIMIT 20`) |
 
-## Auth Tables (Server-only)
+## Auth Tables (Server-Only)
 - `users`: `id`, `email` (lowercase UNIQUE), `full_name`, `password_hash`, `role` (`user\|admin`), `email_verified`, `google_sub` (UNIQUE), `created_at`
-- `email_verifications`: `id`, `user_id`, `email`, `purpose` (`verify_email\|reset_password`), `code_hash`, `attempts`, `expires_at`, `consumed_at`, `created_at`
-- `sessions`: `id` (SHA-256 token hash), `user_id`, `expires_at`, `created_at`
+- `email_verifications`: `id`, `user_id`, `email`, `purpose` (`verify_email\|reset_password`), `code_hash` (HMAC-SHA256), `attempts`, `expires_at`, `consumed_at`, `created_at`
+- `sessions`: `id` (HMAC-SHA256 token digest), `user_id`, `expires_at`, `created_at`

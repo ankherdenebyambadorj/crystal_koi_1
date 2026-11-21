@@ -9,3 +9,5 @@ export const NIGHT_PLATE_URL =
 
 export const KOI_MODEL_URL =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261104_151843_47d87652-1c40-465c-b0d6-cd94c22a9d3e.glb';
+
+export const GOOGLE_GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';

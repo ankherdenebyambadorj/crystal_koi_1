@@ -8,6 +8,16 @@ import { HoneypotField } from '../components/forms/HoneypotField.jsx';
 import { TextAreaField } from '../components/forms/TextAreaField.jsx';
 import { TextField } from '../components/forms/TextField.jsx';
 import { PageShell } from '../components/layout/PageShell.jsx';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog.jsx';
 import { RichText } from '../components/ui/RichText.jsx';
 import { brand } from '../content/brand.js';
 import { optOutCopy, sharedFormErrors } from '../content/formsContent.js';
@@ -18,30 +28,20 @@ import { useReveal } from '../hooks/useReveal.js';
 import { FORM_LIMITS } from '../lib/formLimits.js';
 
 const schema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email(sharedFormErrors.email)
-    .max(FORM_LIMITS.emailMax, sharedFormErrors.email),
-  reason: z
-    .string()
-    .trim()
-    .max(FORM_LIMITS.reasonMax, sharedFormErrors.required)
-    .optional()
-    .default(''),
+  email: z.string().trim().email(sharedFormErrors.email).max(FORM_LIMITS.emailMax, sharedFormErrors.email),
+  reason: z.string().trim().max(FORM_LIMITS.reasonMax, sharedFormErrors.required).optional().default(''),
   website: z.string().optional(),
 });
 
 export function OptOutPage() {
   const title = pageTitles[ROUTES.optOut] || brand.name;
-  usePageMeta({
-    title: `${title} — ${brand.name}`,
-    description: optOutCopy.lede,
-  });
+  usePageMeta({ title: `${title} — ${brand.name}`, description: optOutCopy.lede });
 
   const [headerRef, headerIn] = useReveal();
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [pendingValues, setPendingValues] = useState(null);
+  const [confirming, setConfirming] = useState(false);
   const requestIdRef = useRef(createRequestId());
 
   const {
@@ -51,23 +51,21 @@ export function OptOutPage() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: {
-      email: '',
-      reason: '',
-      website: '',
-    },
+    defaultValues: { email: '', reason: '', website: '' },
   });
 
-  const onSubmit = async (values) => {
+  const handleConfirm = async () => {
+    if (!pendingValues || confirming) return;
+    setConfirming(true);
     setSubmitError('');
     try {
-      await submitOptOutRequest(
-        { ...values, request_id: requestIdRef.current },
-        ROUTES.optOut,
-      );
+      await submitOptOutRequest({ ...pendingValues, request_id: requestIdRef.current }, ROUTES.optOut);
       setSubmitted(true);
     } catch (err) {
       setSubmitError(mapServerError(err));
+    } finally {
+      setConfirming(false);
+      setPendingValues(null);
     }
   };
 
@@ -76,6 +74,7 @@ export function OptOutPage() {
     reset();
     setSubmitted(false);
     setSubmitError('');
+    setPendingValues(null);
   };
 
   return (
@@ -95,8 +94,11 @@ export function OptOutPage() {
           successBody={optOutCopy.successBody}
           onReset={handleReset}
           submitError={submitError}
-          onSubmit={handleSubmit(onSubmit)}
-          isSubmitting={isSubmitting}
+          onSubmit={handleSubmit((values) => {
+            setSubmitError('');
+            setPendingValues(values);
+          })}
+          isSubmitting={isSubmitting || confirming}
           submitLabel={optOutCopy.submit}
         >
           <HoneypotField register={register('website')} />
@@ -121,6 +123,26 @@ export function OptOutPage() {
           />
         </FormShell>
       </div>
+
+      <AlertDialog
+        open={Boolean(pendingValues)}
+        onOpenChange={(open) => {
+          if (!open && !confirming) setPendingValues(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{optOutCopy.confirm.title}</AlertDialogTitle>
+            <AlertDialogDescription>{optOutCopy.confirm.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirming}>{optOutCopy.confirm.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} disabled={confirming}>
+              {optOutCopy.confirm.action}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }

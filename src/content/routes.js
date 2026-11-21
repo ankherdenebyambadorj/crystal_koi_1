@@ -25,3 +25,5 @@ export const ROUTES = {
 };
 
 export const STACKED_MAX = 820;
+export const PHONE_UNIT_MAX_WIDTH = 487;
+

@@ -7,6 +7,7 @@ import { FacebookIcon } from '../icons/FacebookIcon.jsx';
 import { InstagramIcon } from '../icons/InstagramIcon.jsx';
 import { Logo } from '../icons/Logo.jsx';
 import { MapPinIcon, PhoneIcon } from '../icons/featureIcons.jsx';
+import { Separator } from '../ui/separator.jsx';
 
 function LiveStatusBadge() {
   const { data, isLoading, isError } = useServiceStatus();
@@ -108,6 +109,8 @@ export function SiteFooter({ statusSlot }) {
           </div>
         ))}
       </div>
+
+      <Separator />
 
       <div className="footer-legal">
         <span>

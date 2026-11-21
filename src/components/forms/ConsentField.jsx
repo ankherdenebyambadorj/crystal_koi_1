@@ -1,11 +1,12 @@
 import { Controller } from 'react-hook-form';
 import { Checkbox } from '../ui/checkbox.jsx';
+import { FormItem, FormMessage } from '../ui/form.jsx';
 import { Label } from '../ui/label.jsx';
 
 export function ConsentField({ id, name, control, label, error }) {
   const errorId = error ? `${id}-err` : undefined;
   return (
-    <div className="form-field">
+    <FormItem id={id}>
       <div className="form-consent-row">
         <Controller
           name={name}
@@ -24,11 +25,7 @@ export function ConsentField({ id, name, control, label, error }) {
           {label}
         </Label>
       </div>
-      {error && (
-        <p id={errorId} className="form-error">
-          {error}
-        </p>
-      )}
-    </div>
+      <FormMessage id={errorId}>{error}</FormMessage>
+    </FormItem>
   );
 }

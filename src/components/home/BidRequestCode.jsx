@@ -3,6 +3,7 @@ import { brand } from '../../content/brand.js';
 import { packs } from '../../content/homeContent.js';
 import { useReveal } from '../../hooks/useReveal.js';
 import { useTypewriter } from '../../hooks/useTypewriter.js';
+import { ScrollArea } from '../ui/scroll-area.jsx';
 
 const BID_REQUEST_TEXT = [
   '  "id": "7f3a9c1e00b24d6e8a51c0ffee42d0e1",',
@@ -37,10 +38,10 @@ export function BidRequestCode({ reducedMotion }) {
         <span>{packs.code.file}</span>
         <span>{packs.code.protocol}</span>
       </div>
-      <div className="code-body">
+      <ScrollArea className="code-body">
         {typed}
         {!reducedMotion && <span className="code-caret" />}
-      </div>
+      </ScrollArea>
       <div className="code-foot">
         <span>{packs.code.deal}</span>
         <span className="code-foot-ready">

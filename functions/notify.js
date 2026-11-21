@@ -35,6 +35,19 @@ function createLineReader(socket) {
     });
 }
 
+function buildSmtpPayload(from, recipient, safeSubject, safeBody) {
+  return [
+    `From: <${from}>`,
+    `To: <${recipient}>`,
+    `Subject: =?UTF-8?B?${Buffer.from(safeSubject).toString('base64')}?=`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    safeBody,
+    '.',
+  ].join('\r\n');
+}
+
 export async function sendPlainEmail({ to, subject, text }) {
   if (!isSmtpConfigured() || !to) {
     return { sent: false, reason: 'not_configured' };
@@ -57,10 +70,7 @@ export async function sendPlainEmail({ to, subject, text }) {
       resolve(result);
     };
 
-    const socket =
-      port === 465
-        ? tls.connect({ host, port, servername: host })
-        : net.connect({ host, port });
+    const socket = port === 465 ? tls.connect({ host, port, servername: host }) : net.connect({ host, port });
 
     socket.setTimeout(5000, () => {
       socket.destroy();
@@ -84,68 +94,37 @@ export async function sendPlainEmail({ to, subject, text }) {
       let ehlo = await sendCmd('EHLO crystalkoi.local');
       if (!ehlo.startsWith('250')) throw new Error('bad_ehlo');
 
+      let activeSend = sendCmd;
+      let activeSock = socket;
+
       if (port !== 465) {
         const st = await sendCmd('STARTTLS');
         if (st.startsWith('220')) {
           const tlsSock = tls.connect({ socket, servername: host });
           const tlsReader = createLineReader(tlsSock);
-          const sendTls = async (cmd) => {
+          activeSend = async (cmd) => {
             tlsSock.write(`${cmd}\r\n`);
             return tlsReader();
           };
-          ehlo = await sendTls('EHLO crystalkoi.local');
+          activeSock = tlsSock;
+          ehlo = await activeSend('EHLO crystalkoi.local');
           if (!ehlo.startsWith('250')) throw new Error('bad_tls_ehlo');
-
-          const auth1 = await sendTls('AUTH LOGIN');
-          if (!auth1.startsWith('334')) throw new Error('bad_auth');
-          const authU = await sendTls(Buffer.from(user).toString('base64'));
-          if (!authU.startsWith('334')) throw new Error('bad_user');
-          const authP = await sendTls(Buffer.from(pass).toString('base64'));
-          if (!authP.startsWith('235')) throw new Error('bad_pass');
-
-          await sendTls(`MAIL FROM:<${from}>`);
-          await sendTls(`RCPT TO:<${recipient}>`);
-          await sendTls('DATA');
-          const msg = [
-            `From: <${from}>`,
-            `To: <${recipient}>`,
-            `Subject: =?UTF-8?B?${Buffer.from(safeSubject).toString('base64')}?=`,
-            'MIME-Version: 1.0',
-            'Content-Type: text/plain; charset=UTF-8',
-            '',
-            safeBody,
-            '.',
-          ].join('\r\n');
-          const done = await sendTls(msg);
-          await sendTls('QUIT').catch(() => {});
-          tlsSock.end();
-          finish({ sent: done.startsWith('250') });
-          return;
         }
       }
 
-      const auth1 = await sendCmd('AUTH LOGIN');
+      const auth1 = await activeSend('AUTH LOGIN');
       if (!auth1.startsWith('334')) throw new Error('bad_auth');
-      await sendCmd(Buffer.from(user).toString('base64'));
-      const authP = await sendCmd(Buffer.from(pass).toString('base64'));
+      const authU = await activeSend(Buffer.from(user).toString('base64'));
+      if (!authU.startsWith('334')) throw new Error('bad_user');
+      const authP = await activeSend(Buffer.from(pass).toString('base64'));
       if (!authP.startsWith('235')) throw new Error('bad_pass');
 
-      await sendCmd(`MAIL FROM:<${from}>`);
-      await sendCmd(`RCPT TO:<${recipient}>`);
-      await sendCmd('DATA');
-      const msg = [
-        `From: <${from}>`,
-        `To: <${recipient}>`,
-        `Subject: =?UTF-8?B?${Buffer.from(safeSubject).toString('base64')}?=`,
-        'MIME-Version: 1.0',
-        'Content-Type: text/plain; charset=UTF-8',
-        '',
-        safeBody,
-        '.',
-      ].join('\r\n');
-      const done = await sendCmd(msg);
-      await sendCmd('QUIT').catch(() => {});
-      socket.end();
+      await activeSend(`MAIL FROM:<${from}>`);
+      await activeSend(`RCPT TO:<${recipient}>`);
+      await activeSend('DATA');
+      const done = await activeSend(buildSmtpPayload(from, recipient, safeSubject, safeBody));
+      await activeSend('QUIT').catch(() => {});
+      activeSock.end();
       finish({ sent: done.startsWith('250') });
     };
 
@@ -162,10 +141,29 @@ export async function notifyIntakeSubmission(kind, record) {
 
   const lines = [
     `Crystal Koi intake submission: ${kind}`,
-    `ID: ${record.request_id}`,
+    `Request ID: ${record.request_id}`,
     `Source: ${record.source_path}`,
     `Created: ${record.created_at}`,
   ];
+
+  const optionalFields = [
+    ['Full name', record.full_name],
+    ['Email', record.email],
+    ['Phone', record.phone],
+    ['Company', record.company],
+    ['Preferred window', record.preferred_window],
+    ['Role', record.role],
+    ['Monthly volume', record.monthly_volume],
+    ['Topic', record.topic],
+    ['Message', record.message],
+    ['Reason', record.reason],
+    ['Consent at', record.consent_at],
+  ];
+
+  for (const [label, val] of optionalFields) {
+    if (val) lines.push(`${label}: ${val}`);
+  }
+
   await sendPlainEmail({
     to: target,
     subject: `[Crystal Koi] New ${kind}`,

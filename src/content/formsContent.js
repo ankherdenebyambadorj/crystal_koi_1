@@ -120,6 +120,12 @@ export const optOutCopy = {
     email: { label: 'И-мэйл', placeholder: 'name@company.mn' },
     reason: { label: 'Шалтгаан (заавал биш)', placeholder: 'Нэмэлт тайлбар бичих боломжтой...' },
   },
+  confirm: {
+    title: 'Татгалзах хүсэлтийг илгээх үү?',
+    description: 'Оруулсан и-мэйл хаягаарх бүртгэл болон холбогдох боловсруулалтыг зогсоох хүсэлт илгээгдэнэ.',
+    cancel: 'Цуцлах',
+    action: 'Баталгаажуулах',
+  },
 };
 
 export const loginCopy = {
@@ -146,6 +152,7 @@ export const loginCopy = {
   alreadySignedInTitle: 'Та нэвтэрсэн байна',
   alreadySignedInAction: 'Нүүр хуудас руу очих',
   logoutLabel: 'Гарах',
+  logoutSuccess: 'Системээс гарлаа.',
   fields: {
     fullName: { label: 'Нэр', placeholder: 'Таны бүтэн нэр' },
     email: { label: 'И-мэйл', placeholder: 'name@company.mn' },
