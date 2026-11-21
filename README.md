@@ -1,6 +1,6 @@
 # Crystal Koi — Supply Side Studio
 
-Mongolian-language product website for **Crystal Koi**, a self-serve programmatic supply curation platform. Built with React 19, Vite, Tailwind CSS, `@radix-ui/*` primitives, Three.js, WebGL1, Express, and a PostgreSQL / SQLite repository backend.
+Mongolian-language product website for **Crystal Koi**, a self-serve programmatic supply curation platform. Built with React 19, Vite, Tailwind CSS, `@radix-ui/*` primitives, Three.js, WebGL1, Express, and a PostgreSQL / SQLite repository backend. Typography pairs `Inter Tight`, `Instrument Serif`, `Cormorant Garamond`, `Fira Code`, and self-hosted `Krona One` (OFL 1.1 via `@fontsource/krona-one`) for the hero wordmark.
 
 ## 1. Quick Start
 1. Install packages (requires **Node.js `>=22.18`**):
@@ -20,8 +20,8 @@ Mongolian-language product website for **Crystal Koi**, a self-serve programmati
 ## 3. Environment Variables
 Configured in `.env` (never committed) following `.env.example`:
 - **Server core**: `NODE_ENV`, `PORT`, `APP_URL`, `SESSION_SECRET` (`>= 32` chars required in production), `COOKIE_CROSS_SITE`
-- **Database**: `DATABASE_URL` (PostgreSQL), `DB_PATH` (SQLite fallback)
-- **Integrations**: `GOOGLE_CLIENT_ID`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `NOTIFY_EMAIL`
+- **Database**: `DATABASE_URL` (PostgreSQL — on Cloud Run use the provider's IPv4 connection **pooler** address, not an IPv6-only direct address), `PGSSL`, `PG_CA_CERT`, `DB_PATH` (SQLite fallback)
+- **Integrations**: `GOOGLE_CLIENT_ID`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `NOTIFY_EMAIL`, `SMTP_ALLOW_PLAINTEXT`
 
 ## 4. Folder Structure
 - `src/content/` — All visible Mongolian copy (`homeContent.js`, `pagesContent.js`, `formsContent.js`, `siteContent.js`), asset URLs (`assets.js`), `brand.js`, `routes.js`
@@ -61,7 +61,7 @@ All SQL resides in `functions/repository/pgRepo.js` (PostgreSQL when `DATABASE_U
 Run `npm test` (`tests/unit.test.js`). Database-dependent suites inject an in-memory fake repository via `setRepository()` so tests stay fast and isolated from disk state.
 
 ## 10. Production Deployment
-Build `npm run build`, configure `NODE_ENV=production`, `SESSION_SECRET` (>= 32 chars), `DATABASE_URL` (Managed PostgreSQL), and `APP_URL`, then run `npm start` on port `3000`. See `docs/OPERATIONS.md`.
+Build `npm run build`, configure `NODE_ENV=production`, `SESSION_SECRET` (>= 32 chars), `DATABASE_URL` (Managed PostgreSQL IPv4 pooler with TLS via `sslmode=require` or `PGSSL=1` and optional `PG_CA_CERT`), and `APP_URL`, then run `npm start` on port `3000`. See `docs/OPERATIONS.md`.
 
 ## 11. Further Documentation
 - `docs/ARCHITECTURE.md` — Runtime and module boundaries

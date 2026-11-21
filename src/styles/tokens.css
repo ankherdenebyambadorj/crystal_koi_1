@@ -13,6 +13,7 @@
   --font-sans: "Inter Tight", system-ui, sans-serif;
   --font-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
   --font-mono: "Fira Code", ui-monospace, monospace;
+  --font-wide: "Krona One", "Inter Tight", system-ui, sans-serif;
 
   --fs-hero: calc(74 * var(--u));
   --lh-hero: calc(68 * var(--u));
@@ -106,6 +107,6 @@
     --fs-role-title: 27px;
     --fs-stat: 30px;
     --fs-scroll-card: 18px;
-    --fs-wordmark: 76px;
+    --fs-wordmark: min(76px, 19.4vw);
   }
 }

@@ -11,14 +11,38 @@ const INTAKE_TABLES = {
 
 let pool = null;
 
-function getPool() {
-  if (pool) return pool;
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+export function buildPoolConfig(env = process.env) {
+  const connectionString = String(env.DATABASE_URL || '');
+  let useSsl = env.PGSSL === '1';
+
+  if (!useSsl && connectionString) {
+    try {
+      const parsed = new URL(connectionString);
+      useSsl = parsed.searchParams.get('sslmode') === 'require';
+    } catch {
+      useSsl = /(?:^|[?&])sslmode=require(?:&|$)/i.test(connectionString);
+    }
+  }
+
+  const caCert = env.PG_CA_CERT ? String(env.PG_CA_CERT).replace(/\\n/g, '\n') : '';
+  const ssl = useSsl
+    ? caCert
+      ? { rejectUnauthorized: true, ca: caCert }
+      : { rejectUnauthorized: true }
+    : undefined;
+
+  return {
+    connectionString,
+    ...(ssl ? { ssl } : {}),
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
-  });
+  };
+}
+
+function getPool() {
+  if (pool) return pool;
+  pool = new Pool(buildPoolConfig());
   return pool;
 }
 

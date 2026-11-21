@@ -4,6 +4,7 @@ Runtime and UI packages declared in `package.json`:
 
 | Package | Version | Purpose |
 |---|---|---|
+| `@fontsource/krona-one` | `^5.3.0` | Self-hosted `Krona One` (OFL 1.1) wide display font for hero wordmark |
 | `express` | `^4.21.2` | HTTP server, API endpoints, security middleware, and static/Vite middleware |
 | `pg` | `^8.23.1` | PostgreSQL driver when `DATABASE_URL` is configured (fallback is built-in `node:sqlite`) |
 | `dotenv` | `^17.2.3` | Environment variable loading for local development |

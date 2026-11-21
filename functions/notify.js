@@ -109,6 +109,9 @@ export async function sendPlainEmail({ to, subject, text }) {
           activeSock = tlsSock;
           ehlo = await activeSend('EHLO crystalkoi.local');
           if (!ehlo.startsWith('250')) throw new Error('bad_tls_ehlo');
+        } else if (process.env.SMTP_ALLOW_PLAINTEXT !== '1') {
+          socket.destroy();
+          return finish({ sent: false, reason: 'tls_required' });
         }
       }
 

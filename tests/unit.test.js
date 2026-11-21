@@ -444,3 +444,73 @@ test('Google login prevents pre-hijacking by clearing unverified passwords, sess
   const reg = await handleRegister({ full_name: 'Bat', email: 'bat@example.com', password: 'StrongPassword123' });
   assert.equal(reg.status, 503);
 });
+
+test('sendPlainEmail fails closed when server refuses STARTTLS and sends no credentials', async () => {
+  const net = await import('node:net');
+  const { sendPlainEmail } = await import('../functions/notify.js');
+  const receivedLines = [];
+
+  const server = net.createServer((sock) => {
+    sock.write('220 fake.smtp ESMTP\r\n');
+    let buf = '';
+    sock.on('data', (chunk) => {
+      buf += chunk.toString('utf8');
+      while (buf.includes('\n')) {
+        const idx = buf.indexOf('\n');
+        const line = buf.slice(0, idx).replace(/\r$/, '');
+        buf = buf.slice(idx + 1);
+        receivedLines.push(line);
+        if (line.startsWith('EHLO')) sock.write('250 fake.smtp OK\r\n');
+        else if (line === 'STARTTLS') sock.write('502 STARTTLS unavailable\r\n');
+        else sock.write('500 unexpected\r\n');
+      }
+    });
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const addr = server.address();
+  const prevEnv = {
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASS: process.env.SMTP_PASS,
+    SMTP_ALLOW_PLAINTEXT: process.env.SMTP_ALLOW_PLAINTEXT,
+  };
+
+  process.env.SMTP_HOST = '127.0.0.1';
+  process.env.SMTP_PORT = String(addr.port);
+  process.env.SMTP_USER = 'secret-user';
+  process.env.SMTP_PASS = 'secret-pass';
+  delete process.env.SMTP_ALLOW_PLAINTEXT;
+
+  try {
+    const res = await sendPlainEmail({ to: 'dest@example.com', subject: 'Test', text: 'Body' });
+    assert.deepEqual(res, { sent: false, reason: 'tls_required' });
+    assert.equal(receivedLines.some((l) => l.startsWith('AUTH')), false);
+    assert.equal(receivedLines.some((l) => l.includes(Buffer.from('secret-user').toString('base64'))), false);
+    assert.equal(receivedLines.some((l) => l.includes(Buffer.from('secret-pass').toString('base64'))), false);
+  } finally {
+    for (const [k, v] of Object.entries(prevEnv)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('pgRepo buildPoolConfig enables verified TLS for sslmode=require, PGSSL=1, and optional PG_CA_CERT', async () => {
+  const { buildPoolConfig } = await import('../functions/repository/pgRepo.js');
+
+  const noSsl = buildPoolConfig({ DATABASE_URL: 'postgresql://user:pw@pooler.example:5432/db' });
+  assert.equal(noSsl.ssl, undefined);
+
+  const urlSsl = buildPoolConfig({ DATABASE_URL: 'postgresql://user:pw@pooler.example:5432/db?sslmode=require' });
+  assert.deepEqual(urlSsl.ssl, { rejectUnauthorized: true });
+
+  const envSsl = buildPoolConfig({
+    DATABASE_URL: 'postgresql://user:pw@pooler.example:5432/db',
+    PGSSL: '1',
+    PG_CA_CERT: '---CERT---\\nLINE2',
+  });
+  assert.deepEqual(envSsl.ssl, { rejectUnauthorized: true, ca: '---CERT---\nLINE2' });
+});

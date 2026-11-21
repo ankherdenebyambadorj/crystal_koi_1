@@ -433,7 +433,7 @@ html.anim [data-in] {
 
 .nav-item:hover,
 .nav-item[aria-expanded="true"] {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .nav-item[aria-current="page"] {
@@ -514,10 +514,11 @@ html.anim [data-in] {
   position: absolute;
   left: calc(67 * var(--u));
   top: calc(594 * var(--u));
+  font-family: var(--font-wide);
   font-size: var(--fs-hero);
   line-height: var(--lh-hero);
-  letter-spacing: var(--ls-hero);
-  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-weight: 400;
   max-width: calc(1080 * var(--u));
   overflow-wrap: break-word;
 }
@@ -655,8 +656,8 @@ html.anim [data-in] {
     right: 20px;
     top: auto;
     bottom: 250px;
-    font-size: var(--fs-hero);
-    line-height: var(--lh-hero);
+    font-size: clamp(30px, calc((100vw - 40px) / 8.7), 46px);
+    line-height: 1.15;
     max-width: none;
   }
 

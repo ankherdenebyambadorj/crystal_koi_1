@@ -91,6 +91,7 @@ export function KoiScene({ mode, reducedMotion }) {
         const roomEnv = new RoomEnvironment();
         envTexture = pmremGenerator.fromScene(roomEnv, 0.04).texture;
         scene.environment = envTexture;
+        scene.environmentIntensity = 0.75;
         roomEnv.dispose();
         pmremGenerator.dispose();
 

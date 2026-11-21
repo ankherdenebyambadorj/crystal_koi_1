@@ -16,7 +16,7 @@ export function buildKoiMeshes(THREE, gltfScene, swimUniforms, body, disposables
     }
 
     const mat = new THREE.MeshPhysicalMaterial({
-      color: origMap ? 0xc9b4ff : 0xb8a4ff,
+      color: 0x8a5cff,
       map: origMap,
       emissiveMap: origMap,
       roughness: 0.18,
@@ -26,13 +26,12 @@ export function buildKoiMeshes(THREE, gltfScene, swimUniforms, body, disposables
       iridescence: 0.85,
       iridescenceIOR: 1.4,
       iridescenceThicknessRange: [260, 700],
-      emissive: new THREE.Color(0x7a46ff),
-      emissiveIntensity: 0.55,
-      sheen: 0.25,
+      emissive: new THREE.Color(0x6a2fff),
+      emissiveIntensity: 0.35,
+      sheen: 0.15,
       sheenColor: new THREE.Color(0xff9ce6),
       transparent: true,
       opacity: 0.95,
-      envMapIntensity: 0.75,
       side: THREE.DoubleSide,
     });
 
